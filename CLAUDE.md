@@ -1,9 +1,12 @@
-# PE Static Analyzer + AI Report Tool
+# BinSight
 
 Open-source portfolio project: a web app for reverse engineers that statically analyzes Windows PE
 (malware) files, then uses AI to generate a one-shot report of flags + suggested dynamic-analysis
 next steps. Displayed in the UI and downloadable. Priorities, in order: **usefulness > security >
 CI/CD/Docker demo value.**
+
+Product context (users, positioning, principles) lives in `frontend/PRODUCT.md` — read it before
+UI/copy work. This file covers architecture/engineering decisions.
 
 ## Architecture (do not re-litigate — these were deliberately chosen after weighing alternatives)
 

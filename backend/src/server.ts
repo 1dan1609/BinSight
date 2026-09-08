@@ -1,13 +1,7 @@
-import Fastify from "fastify";
+import { buildApp } from "./app.js";
 import { env } from "./config/env.js";
-import { loggerOptions } from "./lib/logger.js";
-import { registerSecurityPlugins } from "./plugins/security.js";
 
-const app = Fastify({ logger: loggerOptions, bodyLimit: 512 * 1024 });
-
-await registerSecurityPlugins(app);
-
-app.get("/healthz", async () => ({ status: "ok" }));
+const app = await buildApp();
 
 app
   .listen({ port: env.PORT, host: env.HOST })

@@ -19,7 +19,6 @@
     "@pe-analyzer/shared-types": "workspace:*",
     "better-sqlite3": "^11.5.0",
     "fastify": "^5.1.0",
-    "groq-sdk": "^0.7.0",
     "pino": "^9.5.0",
     "zod": "^3.23.8"
   },
