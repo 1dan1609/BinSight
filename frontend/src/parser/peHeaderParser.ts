@@ -98,11 +98,42 @@ export function parsePeHeader(reader: SafeReader): ParsedPeHeader {
     throw new PEParseError(`Unrecognized optional header magic: 0x${magic.toString(16)}`);
   }
 
+  const majorLinkerVersion = reader.u8(optionalHeaderOffset + 2);
+  const minorLinkerVersion = reader.u8(optionalHeaderOffset + 3);
+  const sizeOfCode = reader.u32(optionalHeaderOffset + 4);
+  const sizeOfInitializedData = reader.u32(optionalHeaderOffset + 8);
+  const sizeOfUninitializedData = reader.u32(optionalHeaderOffset + 12);
   const entryPointAddress = reader.u32(optionalHeaderOffset + 16);
+  const baseOfCode = reader.u32(optionalHeaderOffset + 20);
   const imageBase = isPE32Plus ? reader.u64(optionalHeaderOffset + 24) : reader.u32(optionalHeaderOffset + 28);
+  const sectionAlignment = reader.u32(optionalHeaderOffset + 32);
+  const fileAlignment = reader.u32(optionalHeaderOffset + 36);
+  const majorOperatingSystemVersion = reader.u16(optionalHeaderOffset + 40);
+  const minorOperatingSystemVersion = reader.u16(optionalHeaderOffset + 42);
+  const majorImageVersion = reader.u16(optionalHeaderOffset + 44);
+  const minorImageVersion = reader.u16(optionalHeaderOffset + 46);
+  const majorSubsystemVersion = reader.u16(optionalHeaderOffset + 48);
+  const minorSubsystemVersion = reader.u16(optionalHeaderOffset + 50);
+  const win32VersionValue = reader.u32(optionalHeaderOffset + 52);
   const sizeOfImage = reader.u32(optionalHeaderOffset + 56);
+  const sizeOfHeaders = reader.u32(optionalHeaderOffset + 60);
+  const checkSum = reader.u32(optionalHeaderOffset + 64);
   const subsystemRaw = reader.u16(optionalHeaderOffset + 68);
   const dllCharacteristicsRaw = reader.u16(optionalHeaderOffset + 70);
+
+  const sizeOfStackReserve = isPE32Plus
+    ? reader.u64(optionalHeaderOffset + 72)
+    : reader.u32(optionalHeaderOffset + 72);
+  const sizeOfStackCommit = isPE32Plus
+    ? reader.u64(optionalHeaderOffset + 80)
+    : reader.u32(optionalHeaderOffset + 76);
+  const sizeOfHeapReserve = isPE32Plus
+    ? reader.u64(optionalHeaderOffset + 88)
+    : reader.u32(optionalHeaderOffset + 80);
+  const sizeOfHeapCommit = isPE32Plus
+    ? reader.u64(optionalHeaderOffset + 96)
+    : reader.u32(optionalHeaderOffset + 84);
+  const loaderFlags = reader.u32(optionalHeaderOffset + (isPE32Plus ? 104 : 88));
 
   const numberOfRvaAndSizesOffset = isPE32Plus ? optionalHeaderOffset + 108 : optionalHeaderOffset + 92;
   const dataDirectoryOffset = isPE32Plus ? optionalHeaderOffset + 112 : optionalHeaderOffset + 96;
@@ -122,6 +153,7 @@ export function parsePeHeader(reader: SafeReader): ParsedPeHeader {
   const sectionTableOffset = optionalHeaderOffset + sizeOfOptionalHeader;
 
   return {
+    e_lfanew,
     isPE32Plus,
     machine: MACHINE_TYPES[machineRaw] ?? `UNKNOWN_0x${machineRaw.toString(16)}`,
     numberOfSections,
@@ -136,5 +168,28 @@ export function parsePeHeader(reader: SafeReader): ParsedPeHeader {
     dataDirectories,
     pointerToSymbolTable,
     numberOfSymbols,
+    majorLinkerVersion,
+    minorLinkerVersion,
+    sizeOfCode,
+    sizeOfInitializedData,
+    sizeOfUninitializedData,
+    baseOfCode,
+    sectionAlignment,
+    fileAlignment,
+    majorOperatingSystemVersion,
+    minorOperatingSystemVersion,
+    majorImageVersion,
+    minorImageVersion,
+    majorSubsystemVersion,
+    minorSubsystemVersion,
+    win32VersionValue,
+    sizeOfHeaders,
+    checkSum,
+    sizeOfStackReserve,
+    sizeOfStackCommit,
+    sizeOfHeapReserve,
+    sizeOfHeapCommit,
+    loaderFlags,
+    numberOfRvaAndSizes,
   };
 }

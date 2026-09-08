@@ -1,12 +1,16 @@
 import { INDICATORS_LIMITS, type IndicatorsJson } from "@pe-analyzer/shared-types";
+import { parseDebugInfo } from "./debugDirectoryParser";
 import { calculateShannonEntropy } from "./entropyCalculator";
-import { evaluateApiCombos } from "./heuristics";
+import { evaluateApiCombos, evaluateOverlay, evaluateTls } from "./heuristics";
 import { calculateHashes } from "./hashCalculator";
 import { parseExports, parseImports } from "./importExportWalker";
+import { analyzeOverlay } from "./overlayAnalyzer";
 import { parsePeHeader } from "./peHeaderParser";
+import { parseRichHeader } from "./richHeaderParser";
 import { PEParseError, SafeReader } from "./safeReader";
 import { parseSections } from "./sectionAnalyzer";
 import { extractStrings } from "./stringExtractor";
+import { parseTls } from "./tlsParser";
 
 export interface BuildIndicatorsResult {
   indicators: IndicatorsJson;
@@ -33,12 +37,20 @@ export async function buildIndicators(buffer: ArrayBuffer): Promise<BuildIndicat
   const strings = extractStrings(fileBytes);
   const hashes = await calculateHashes(fileBytes);
   const overallEntropy = calculateShannonEntropy(fileBytes);
+  const overlay = analyzeOverlay(reader, sections);
+  const tls = parseTls(reader, header.dataDirectories, sections, header.imageBase, header.isPE32Plus, warnings);
+  const debugInfo = parseDebugInfo(reader, header.dataDirectories, sections, warnings);
+  const richHeader = parseRichHeader(reader, header.e_lfanew);
 
   const importedFunctionNames = new Set<string>();
   for (const imp of imports) {
     for (const fn of imp.functions) importedFunctionNames.add(fn);
   }
-  const heuristics = evaluateApiCombos(importedFunctionNames);
+  const heuristics = [
+    ...evaluateApiCombos(importedFunctionNames),
+    ...evaluateOverlay(overlay),
+    ...evaluateTls(tls),
+  ];
 
   let truncated = false;
   const cappedSections = sections.slice(0, INDICATORS_LIMITS.maxSections);
@@ -61,7 +73,7 @@ export async function buildIndicators(buffer: ArrayBuffer): Promise<BuildIndicat
 
   const indicators: IndicatorsJson = {
     format: "pe",
-    schemaVersion: 1,
+    schemaVersion: 2,
     fileSize: buffer.byteLength,
     hashes,
     overallEntropy,
@@ -76,12 +88,39 @@ export async function buildIndicators(buffer: ArrayBuffer): Promise<BuildIndicat
       entryPointAddress: header.entryPointAddress,
       imageBase: header.imageBase,
       sizeOfImage: header.sizeOfImage,
+      majorLinkerVersion: header.majorLinkerVersion,
+      minorLinkerVersion: header.minorLinkerVersion,
+      sizeOfCode: header.sizeOfCode,
+      sizeOfInitializedData: header.sizeOfInitializedData,
+      sizeOfUninitializedData: header.sizeOfUninitializedData,
+      baseOfCode: header.baseOfCode,
+      sectionAlignment: header.sectionAlignment,
+      fileAlignment: header.fileAlignment,
+      majorOperatingSystemVersion: header.majorOperatingSystemVersion,
+      minorOperatingSystemVersion: header.minorOperatingSystemVersion,
+      majorImageVersion: header.majorImageVersion,
+      minorImageVersion: header.minorImageVersion,
+      majorSubsystemVersion: header.majorSubsystemVersion,
+      minorSubsystemVersion: header.minorSubsystemVersion,
+      win32VersionValue: header.win32VersionValue,
+      sizeOfHeaders: header.sizeOfHeaders,
+      checkSum: header.checkSum,
+      sizeOfStackReserve: header.sizeOfStackReserve,
+      sizeOfStackCommit: header.sizeOfStackCommit,
+      sizeOfHeapReserve: header.sizeOfHeapReserve,
+      sizeOfHeapCommit: header.sizeOfHeapCommit,
+      loaderFlags: header.loaderFlags,
+      numberOfRvaAndSizes: header.numberOfRvaAndSizes,
     },
     sections: cappedSections,
     imports: cappedImports,
     exports: cappedExports,
     strings: cappedStrings,
     heuristics: cappedHeuristics,
+    overlay,
+    tls,
+    debugInfo,
+    richHeader,
     truncated,
     parseWarnings: warnings.slice(0, 64),
   };

@@ -7,6 +7,7 @@ export interface DataDirectory {
 
 /** Internal, richer-than-shared-schema parse result — indicatorsBuilder projects this down to IndicatorsJson. */
 export interface ParsedPeHeader {
+  e_lfanew: number;
   isPE32Plus: boolean;
   machine: string;
   numberOfSections: number;
@@ -22,6 +23,29 @@ export interface ParsedPeHeader {
   /** COFF symbol table location, needed to resolve section names >8 chars ("/N" long-name form). */
   pointerToSymbolTable: number;
   numberOfSymbols: number;
+  majorLinkerVersion: number;
+  minorLinkerVersion: number;
+  sizeOfCode: number;
+  sizeOfInitializedData: number;
+  sizeOfUninitializedData: number;
+  baseOfCode: number;
+  sectionAlignment: number;
+  fileAlignment: number;
+  majorOperatingSystemVersion: number;
+  minorOperatingSystemVersion: number;
+  majorImageVersion: number;
+  minorImageVersion: number;
+  majorSubsystemVersion: number;
+  minorSubsystemVersion: number;
+  win32VersionValue: number;
+  sizeOfHeaders: number;
+  checkSum: number;
+  sizeOfStackReserve: number;
+  sizeOfStackCommit: number;
+  sizeOfHeapReserve: number;
+  sizeOfHeapCommit: number;
+  loaderFlags: number;
+  numberOfRvaAndSizes: number;
 }
 
 export interface ParsedSection {

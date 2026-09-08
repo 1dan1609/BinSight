@@ -18,7 +18,7 @@ describe("buildIndicators against a real, self-compiled benign PE fixture", () =
     const { indicators } = await buildIndicators(loadFixtureBuffer());
 
     expect(indicators.format).toBe("pe");
-    expect(indicators.schemaVersion).toBe(1);
+    expect(indicators.schemaVersion).toBe(2);
     expect(indicators.fileSize).toBe(44911);
     expect(indicators.truncated).toBe(false);
     expect(indicators.parseWarnings).toEqual([]);
@@ -88,6 +88,39 @@ describe("buildIndicators against a real, self-compiled benign PE fixture", () =
 
     const kernel32 = indicators.imports.find((imp) => imp.dll.toLowerCase() === "kernel32.dll");
     expect(kernel32?.functions.length).toBeGreaterThan(0);
+  });
+
+  it("detects the trailing overlay data after the last section", async () => {
+    const { indicators } = await buildIndicators(loadFixtureBuffer());
+    expect(indicators.overlay.present).toBe(true);
+    expect(indicators.overlay.offset).toBeGreaterThan(0);
+    expect(indicators.overlay.size).toBe(indicators.fileSize - indicators.overlay.offset);
+  });
+
+  it("detects the MinGW-internal TLS callbacks", async () => {
+    const { indicators } = await buildIndicators(loadFixtureBuffer());
+    expect(indicators.tls.present).toBe(true);
+    expect(indicators.tls.callbackCount).toBeGreaterThan(0);
+    expect(indicators.tls.callbackAddresses).toHaveLength(indicators.tls.callbackCount);
+  });
+
+  it("finds no PE Debug Directory (MinGW embeds DWARF sections directly, not a CodeView entry)", async () => {
+    const { indicators } = await buildIndicators(loadFixtureBuffer());
+    expect(indicators.debugInfo.hasDebugDirectory).toBe(false);
+    expect(indicators.debugInfo.pdbPath).toBeNull();
+  });
+
+  it("finds no Rich header (an MSVC-linker-only artifact, absent from MinGW builds)", async () => {
+    const { indicators } = await buildIndicators(loadFixtureBuffer());
+    expect(indicators.richHeader.present).toBe(false);
+    expect(indicators.richHeader.entries).toEqual([]);
+  });
+
+  it("surfaces overlay and TLS callback findings as heuristics", async () => {
+    const { indicators } = await buildIndicators(loadFixtureBuffer());
+    const ids = indicators.heuristics.map((h) => h.id);
+    expect(ids).toContain("OVERLAY_DATA_PRESENT");
+    expect(ids).toContain("TLS_CALLBACKS_PRESENT");
   });
 
   it("computes an overall file entropy in the valid range", async () => {
