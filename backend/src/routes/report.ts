@@ -1,5 +1,6 @@
 import { ReportRequestSchema, type ReportErrorResponse, type ReportResponse } from "@pe-analyzer/shared-types";
 import type { FastifyInstance } from "fastify";
+import type { DailyQuota } from "../lib/dailyQuota.js";
 import { OpenAICompatibleProvider } from "../providers/OpenAICompatibleProvider.js";
 import { ProviderError, type ProviderClient } from "../providers/ProviderClient.js";
 import { createGroqHostedProvider } from "../providers/GroqHostedProvider.js";
@@ -17,13 +18,26 @@ function sendError(
   void reply.status(status).send(body);
 }
 
-export async function registerReportRoute(app: FastifyInstance): Promise<void> {
+export async function registerReportRoute(app: FastifyInstance, dailyQuota: DailyQuota): Promise<void> {
   app.post("/api/v1/report", async (request, reply) => {
     const parsed = ReportRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return sendError(reply, 400, "INVALID_PAYLOAD", parsed.error.message);
     }
     const { indicators, mode, byokConfig } = parsed.data;
+
+    if (mode === "hosted") {
+      const quota = dailyQuota.tryConsume();
+      if (!quota.allowed) {
+        request.log.warn({ count: quota.count, max: quota.max }, "Hosted-mode daily quota exceeded");
+        return sendError(
+          reply,
+          429,
+          "DAILY_QUOTA_EXCEEDED",
+          "The free hosted-mode daily quota has been reached. Try again tomorrow, or use your own API key.",
+        );
+      }
+    }
 
     let provider: ProviderClient;
     try {
