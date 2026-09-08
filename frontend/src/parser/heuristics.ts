@@ -108,3 +108,30 @@ export function evaluateApiCombos(importedFunctionNames: Set<string>): Heuristic
   }
   return findings;
 }
+
+const HIGH_ENTROPY_OVERLAY_THRESHOLD = 7.0;
+
+export function evaluateOverlay(overlay: { present: boolean; size: number; entropy: number }): HeuristicFinding[] {
+  if (!overlay.present) return [];
+  const severity = overlay.entropy > HIGH_ENTROPY_OVERLAY_THRESHOLD ? "HIGH" : "LOW";
+  const highEntropyNote =
+    severity === "HIGH" ? " at high entropy — consistent with an embedded packed/encrypted payload" : "";
+  return [
+    {
+      id: "OVERLAY_DATA_PRESENT",
+      severity,
+      description: `${overlay.size.toLocaleString()} bytes of data appended after the last declared section${highEntropyNote}. This region is outside the PE loader's mapped image and invisible to tools that only inspect declared sections.`,
+    },
+  ];
+}
+
+export function evaluateTls(tls: { callbackCount: number }): HeuristicFinding[] {
+  if (tls.callbackCount === 0) return [];
+  return [
+    {
+      id: "TLS_CALLBACKS_PRESENT",
+      severity: "MEDIUM",
+      description: `${tls.callbackCount} TLS callback(s) present — code here runs before the declared entry point, a known technique to evade tools that only hook the entry point.`,
+    },
+  ];
+}

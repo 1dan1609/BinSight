@@ -27,6 +27,70 @@ export const FileHeaderSchema = z
     entryPointAddress: z.number().int().nonnegative(),
     imageBase: z.number().nonnegative(),
     sizeOfImage: z.number().int().nonnegative(),
+    // Full raw header fields, kept for the PEStudio-style "everything" dashboard view.
+    majorLinkerVersion: z.number().int().nonnegative(),
+    minorLinkerVersion: z.number().int().nonnegative(),
+    sizeOfCode: z.number().int().nonnegative(),
+    sizeOfInitializedData: z.number().int().nonnegative(),
+    sizeOfUninitializedData: z.number().int().nonnegative(),
+    baseOfCode: z.number().int().nonnegative(),
+    sectionAlignment: z.number().int().nonnegative(),
+    fileAlignment: z.number().int().nonnegative(),
+    majorOperatingSystemVersion: z.number().int().nonnegative(),
+    minorOperatingSystemVersion: z.number().int().nonnegative(),
+    majorImageVersion: z.number().int().nonnegative(),
+    minorImageVersion: z.number().int().nonnegative(),
+    majorSubsystemVersion: z.number().int().nonnegative(),
+    minorSubsystemVersion: z.number().int().nonnegative(),
+    win32VersionValue: z.number().int().nonnegative(),
+    sizeOfHeaders: z.number().int().nonnegative(),
+    checkSum: z.number().int().nonnegative(),
+    sizeOfStackReserve: z.number().nonnegative(),
+    sizeOfStackCommit: z.number().nonnegative(),
+    sizeOfHeapReserve: z.number().nonnegative(),
+    sizeOfHeapCommit: z.number().nonnegative(),
+    loaderFlags: z.number().int().nonnegative(),
+    numberOfRvaAndSizes: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const OverlaySchema = z
+  .object({
+    present: z.boolean(),
+    offset: z.number().int().nonnegative(),
+    size: z.number().int().nonnegative(),
+    entropy: z.number().min(0).max(8),
+  })
+  .strict();
+
+export const TlsInfoSchema = z
+  .object({
+    present: z.boolean(),
+    callbackCount: z.number().int().nonnegative(),
+    callbackAddresses: z.array(z.number().nonnegative()).max(64),
+  })
+  .strict();
+
+export const DebugInfoSchema = z
+  .object({
+    hasDebugDirectory: z.boolean(),
+    pdbPath: z.string().max(512).nullable(),
+  })
+  .strict();
+
+export const RichHeaderEntrySchema = z
+  .object({
+    buildId: z.number().int().nonnegative(),
+    productId: z.number().int().nonnegative(),
+    count: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const RichHeaderSchema = z
+  .object({
+    present: z.boolean(),
+    xorKey: z.number().int().nonnegative(),
+    entries: z.array(RichHeaderEntrySchema).max(128),
   })
   .strict();
 
@@ -109,7 +173,7 @@ export const INDICATORS_LIMITS = {
 export const IndicatorsJsonSchema = z
   .object({
     format: z.literal("pe"),
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     fileSize: z.number().int().nonnegative(),
     hashes: HashesSchema,
     overallEntropy: z.number().min(0).max(8),
@@ -119,6 +183,10 @@ export const IndicatorsJsonSchema = z
     exports: z.array(ExportSchema).max(INDICATORS_LIMITS.maxExports),
     strings: z.array(ExtractedStringSchema).max(INDICATORS_LIMITS.maxStrings),
     heuristics: z.array(HeuristicFindingSchema).max(INDICATORS_LIMITS.maxHeuristics),
+    overlay: OverlaySchema,
+    tls: TlsInfoSchema,
+    debugInfo: DebugInfoSchema,
+    richHeader: RichHeaderSchema,
     truncated: z.boolean(),
     parseWarnings: z.array(z.string().max(512)).max(64),
   })
@@ -126,6 +194,11 @@ export const IndicatorsJsonSchema = z
 
 export type Hashes = z.infer<typeof HashesSchema>;
 export type FileHeader = z.infer<typeof FileHeaderSchema>;
+export type Overlay = z.infer<typeof OverlaySchema>;
+export type TlsInfo = z.infer<typeof TlsInfoSchema>;
+export type DebugInfo = z.infer<typeof DebugInfoSchema>;
+export type RichHeaderEntry = z.infer<typeof RichHeaderEntrySchema>;
+export type RichHeader = z.infer<typeof RichHeaderSchema>;
 export type Section = z.infer<typeof SectionSchema>;
 export type SectionAnomaly = z.infer<typeof SectionAnomalySchema>;
 export type Import = z.infer<typeof ImportSchema>;
