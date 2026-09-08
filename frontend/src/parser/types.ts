@@ -19,6 +19,9 @@ export interface ParsedPeHeader {
   sizeOfImage: number;
   sectionTableOffset: number;
   dataDirectories: DataDirectory[];
+  /** COFF symbol table location, needed to resolve section names >8 chars ("/N" long-name form). */
+  pointerToSymbolTable: number;
+  numberOfSymbols: number;
 }
 
 export interface ParsedSection {
