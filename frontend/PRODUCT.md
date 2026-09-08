@@ -16,11 +16,13 @@ Reverse engineers and malware analysts triaging a Windows PE (executable) file. 
 
 ## Product Purpose
 
-BinSight statically analyzes a Windows PE file entirely in the browser (the file itself never leaves the user's machine), extracts structured indicators (headers, sections, entropy, imports/exports, strings, suspicious API heuristics), and generates a one-shot AI report summarizing the flags found and suggesting concrete next steps for further dynamic analysis. The report is displayed in the UI and downloadable. Success is a reverse engineer getting a genuinely useful, trustworthy first-pass triage in under a minute, with zero setup friction.
+BinSight statically analyzes a Windows PE file entirely in the browser (the file itself never leaves the user's machine) and surfaces a comprehensive, PEStudio-caliber static-analysis dashboard — full headers, sections, imports/exports, strings, entropy, overlay data, TLS callbacks, debug/PDB info, Rich header — as the primary surface. Layered alongside it, a one-shot AI report summarizes the flags found and suggests concrete next steps for further dynamic analysis. The dashboard must stand entirely on its own: a seasoned reverse engineer should be able to use BinSight instead of opening PEStudio, full stop, with the AI report as an added benefit they get for free, not the reason the tool exists. The report is displayed in the UI and downloadable. Success is a reverse engineer getting a genuinely useful, trustworthy first-pass triage in under a minute, with zero setup friction.
 
 ## Positioning
 
-The defining mechanism a competing tool couldn't casually copy: the raw file never leaves the browser. Analysis runs client-side; only derived, structured indicators (never the binary) are sent anywhere, and only to generate the AI report. This is both a security property (no server-side file-parsing attack surface) and a trust property for an audience that is often unwilling to upload live samples to a third party. Most competing "upload your malware for analysis" tools require exactly the trust this tool is designed not to need.
+Two defining mechanisms a competing tool couldn't casually copy:
+1. The raw file never leaves the browser. Analysis runs client-side; only derived, structured indicators (never the binary) are sent anywhere, and only to generate the AI report. This is both a security property (no server-side file-parsing attack surface) and a trust property for an audience that is often unwilling to upload live samples to a third party. Most competing "upload your malware for analysis" tools require exactly the trust this tool is designed not to need.
+2. It is not "an AI tool with a file upload." The static-analysis dashboard is the product; the AI report is a clearly-marked, visually distinct bonus panel layered on top — never blended into the rest of the UI such that the tool reads as AI-first. A seasoned RE dismissing this as "just another AI wrapper" on sight is a positioning failure.
 
 ## Operating Context
 
@@ -32,7 +34,8 @@ The defining mechanism a competing tool couldn't casually copy: the raw file nev
 
 ## Capabilities and Constraints
 
-- Client-side parser extracts: DOS/NT headers, section table with per-section entropy, import/export tables with suspicious-API heuristics, extracted/classified strings (URLs, IPs, registry keys, keywords), file hashes (MD5/SHA1/SHA256), and an overall packing/entropy read.
+- Client-side parser extracts: full raw DOS/NT/optional headers, section table with per-section entropy, import/export tables with suspicious-API heuristics, extracted/classified strings (URLs, IPs, registry keys, keywords), file hashes (MD5/SHA1/SHA256), overall packing/entropy read, overlay data (bytes appended after the last section), TLS callback addresses, PE Debug Directory/PDB path, and the Rich header (MSVC toolchain fingerprint; its absence on non-MSVC binaries is expected, not itself a finding).
+- Deliberately out of scope for now: Authenticode/digital-signature parsing (a large, security-sensitive undertaking — untrusted ASN.1/PKCS7 parsing is real new attack surface — scoped as a future phase rather than bundled in) and resource-directory/VERSION_INFO extraction.
 - Parser must fail safely on adversarial/malformed input (truncated, corrupted, or hostile PE files are expected, not edge cases) — no crashes, hangs, or unbounded resource use.
 - Backend is a thin, stateless proxy: validates indicators, builds the AI prompt (with untrusted extracted data clearly delimited against prompt injection), calls the selected provider, returns markdown. It never receives the raw file.
 - Free to host indefinitely (self-managed VM on a permanent free tier); this rules out expensive server-side compute for parsing or hosting a self-run model.
@@ -49,9 +52,10 @@ None yet. No existing screenshots, testimonials, sample reports, or reference de
 ## Product Principles
 
 1. Trust through architecture, not just claims — the "file never leaves your browser" property should be visible and legible in the UI itself, not just documented in a README.
-2. Useful before AI — the indicators summary must stand on its own as valuable output even if a user never requests the AI report.
-3. Speaks the user's language — an expert audience; avoid dumbing down terminology (entropy, RVA, ordinal imports, etc.), but make flagged findings scannable at a glance for a fast triage pass.
+2. The dashboard is the product, the AI report is the bonus — static analysis depth and legibility come first; the AI panel is clearly marked as a distinct, additive feature (visually differentiated, not blended into the rest of the page) rather than the tool's centerpiece.
+3. Speaks the user's language — an expert audience; avoid dumbing down terminology (entropy, RVA, ordinal imports, TLS callbacks, Rich header, etc.), but make flagged findings scannable at a glance for a fast triage pass.
 4. Fails loud to the analyst, fails safe to the system — malformed/hostile input must never crash or hang the tool, but when the parser can't fully make sense of a file, say so explicitly rather than silently showing incomplete results as if complete.
+5. Depth without clutter — PEStudio-caliber data density (headers, sections, imports, strings, overlay, TLS, debug info, Rich header, etc.) organized for fast navigation (a section-driven dashboard, not one long scroll), so more data makes the tool more useful, not more overwhelming.
 
 ## Accessibility & Inclusion
 

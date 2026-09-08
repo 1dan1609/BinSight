@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { ByokConfig, ProviderName } from "@pe-analyzer/shared-types";
 
@@ -14,8 +15,7 @@ export default function ProviderSelector({ onGenerate, disabled }: ProviderSelec
   const canSubmit = mode === "hosted" || apiKey.trim().length > 0;
 
   return (
-    <div className="card">
-      <h2>Generate AI report</h2>
+    <div>
       <div className="provider-options">
         <label>
           <input
@@ -72,12 +72,20 @@ export default function ProviderSelector({ onGenerate, disabled }: ProviderSelec
 
       <button
         type="button"
+        className="primary"
         disabled={disabled || !canSubmit}
         onClick={() =>
           onGenerate(mode, mode === "byok" ? { provider: byokProvider, apiKey } : undefined)
         }
       >
-        {disabled ? "Generating…" : "Generate report"}
+        {disabled ? (
+          <>
+            <Loader2 size={14} className="spin" aria-hidden="true" />
+            Generating…
+          </>
+        ) : (
+          "Generate report"
+        )}
       </button>
     </div>
   );
