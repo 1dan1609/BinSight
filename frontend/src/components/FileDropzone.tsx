@@ -1,3 +1,4 @@
+import { UploadCloud } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
 interface FileDropzoneProps {
@@ -46,6 +47,7 @@ export default function FileDropzone({ onFileSelected, disabled }: FileDropzoneP
         disabled={disabled}
         onChange={(e) => handleFiles(e.target.files)}
       />
+      <UploadCloud size={28} className="dropzone__icon" aria-hidden="true" />
       <p className="dropzone__title">Drop a Windows PE file here, or click to browse</p>
       <p className="dropzone__subtitle">
         Parsing runs entirely in your browser. The file is never uploaded anywhere.

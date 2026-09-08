@@ -9,8 +9,8 @@ interface ReportViewProps {
 
 export default function ReportView({ markdown, generatedAt, modelUsed }: ReportViewProps) {
   return (
-    <div className="card report">
-      <div className="report__meta">
+    <div className="report-output">
+      <div className="report-output__meta">
         Generated {new Date(generatedAt).toLocaleString()} · model: {modelUsed}
       </div>
       {/* Deliberately no rehype-raw plugin: the AI report is rendered as pure Markdown,

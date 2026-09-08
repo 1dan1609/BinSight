@@ -1,11 +1,10 @@
+import { ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { ByokConfig, IndicatorsJson, ReportResponse } from "@pe-analyzer/shared-types";
 import { requestReport } from "./api/reportClient";
-import DownloadButtons from "./components/DownloadButtons";
+import DashboardShell from "./components/dashboard/DashboardShell";
+import { DownloadIndicatorsButton } from "./components/DownloadButtons";
 import FileDropzone from "./components/FileDropzone";
-import IndicatorsSummaryView from "./components/IndicatorsSummaryView";
-import ProviderSelector from "./components/ProviderSelector";
-import ReportView from "./components/ReportView";
 import { runParser } from "./parser/runParser";
 
 type ParseState =
@@ -53,49 +52,45 @@ export default function App() {
   }
 
   return (
-    <main className="app">
-      <header className="app__header">
-        <h1>BinSight</h1>
-        <p>
-          Static analysis for Windows PE files. Parsing runs entirely in your browser — the file
-          never leaves your machine.
-        </p>
+    <div className="app-shell">
+      <header className="app-shell__header">
+        <div className="app-shell__brand">
+          <h1>BinSight</h1>
+        </div>
+        <div className="app-shell__trust">
+          <ShieldCheck size={15} aria-hidden="true" />
+          {parseState.status === "parsed"
+            ? "This file was parsed entirely in your browser — it was never uploaded"
+            : "Files are parsed entirely in your browser — never uploaded"}
+        </div>
+        {parseState.status === "parsed" && (
+          <DownloadIndicatorsButton indicators={parseState.indicators} />
+        )}
       </header>
 
-      <FileDropzone onFileSelected={handleFileSelected} disabled={parseState.status === "parsing"} />
-
-      {parseState.status === "parsing" && <p className="status">Parsing file…</p>}
-      {parseState.status === "error" && (
-        <p className="banner banner--error">Couldn&apos;t parse this file: {parseState.message}</p>
+      {parseState.status !== "parsed" ? (
+        <div className="empty-state">
+          <div>
+            <FileDropzone onFileSelected={handleFileSelected} disabled={parseState.status === "parsing"} />
+            {parseState.status === "parsing" && (
+              <p className="status" style={{ marginTop: "1rem", justifyContent: "center" }}>
+                Parsing file…
+              </p>
+            )}
+            {parseState.status === "error" && (
+              <p className="banner banner--error" style={{ marginTop: "1rem" }}>
+                Couldn&apos;t parse this file: {parseState.message}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <DashboardShell
+          indicators={parseState.indicators}
+          reportState={reportState}
+          onGenerateReport={handleGenerateReport}
+        />
       )}
-
-      {parseState.status === "parsed" && (
-        <>
-          <IndicatorsSummaryView indicators={parseState.indicators} />
-
-          <ProviderSelector
-            onGenerate={handleGenerateReport}
-            disabled={reportState.status === "generating"}
-          />
-
-          {reportState.status === "error" && (
-            <p className="banner banner--error">Report generation failed: {reportState.message}</p>
-          )}
-
-          {reportState.status === "done" && (
-            <ReportView
-              markdown={reportState.report.markdown}
-              generatedAt={reportState.report.generatedAt}
-              modelUsed={reportState.report.modelUsed}
-            />
-          )}
-
-          <DownloadButtons
-            indicators={parseState.indicators}
-            reportMarkdown={reportState.status === "done" ? reportState.report.markdown : undefined}
-          />
-        </>
-      )}
-    </main>
+    </div>
   );
 }

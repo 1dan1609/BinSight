@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-08T00:00:00.000Z",
+  "title": "Design System: BinSight",
+  "extensions": {
+    "colorMeta": {
+      "interactive-blue": { "role": "primary", "displayName": "Interactive Blue", "canonical": "#5b9dff", "tonalRamp": ["#0d1d33", "#123055", "#184277", "#1f5599", "#3672c2", "#5b9dff", "#8bbaff", "#c3ddff"] },
+      "link-blue": { "role": "primary", "displayName": "Link Blue", "canonical": "#6ea8ff", "tonalRamp": ["#0e2140", "#15325f", "#1c447f", "#25569f", "#4680d6", "#6ea8ff", "#9cc4ff", "#cfe3ff"] },
+      "sev-high": { "role": "secondary", "displayName": "Severity High", "canonical": "#f2555a", "tonalRamp": ["#2a1417", "#4a1e21", "#7a2a2e", "#b03a3f", "#d6474d", "#f2555a", "#f68d90", "#fbc7c9"] },
+      "sev-medium": { "role": "secondary", "displayName": "Severity Medium", "canonical": "#e8a33d", "tonalRamp": ["#2a2116", "#4a3a1f", "#7a5e28", "#b0862f", "#d29736", "#e8a33d", "#f0c17d", "#f9e0bd"] },
+      "sev-low": { "role": "secondary", "displayName": "Severity Low", "canonical": "#6b7280", "tonalRamp": ["#191c23", "#25282f", "#33373f", "#454a54", "#575d68", "#6b7280", "#9aa0ab", "#cbcfd6"] },
+      "ai-accent": { "role": "tertiary", "displayName": "AI Violet", "canonical": "#a684ff", "tonalRamp": ["#1a1530", "#251d4d", "#352a70", "#4c3c96", "#7159c4", "#a684ff", "#c6afff", "#e6dbff"] },
+      "bg-shell": { "role": "neutral", "displayName": "Shell Black", "canonical": "#0a0b0e" },
+      "bg-panel": { "role": "neutral", "displayName": "Panel Black", "canonical": "#111318" },
+      "bg-elevated": { "role": "neutral", "displayName": "Elevated Charcoal", "canonical": "#191c23" },
+      "bg-inset": { "role": "neutral", "displayName": "Inset Black", "canonical": "#0d0e12" },
+      "bg-hover": { "role": "neutral", "displayName": "Hover Charcoal", "canonical": "#1c2029" },
+      "border-subtle": { "role": "neutral", "displayName": "Border Subtle", "canonical": "#21252e" },
+      "border-default": { "role": "neutral", "displayName": "Border Default", "canonical": "#2b303b" },
+      "border-strong": { "role": "neutral", "displayName": "Border Strong", "canonical": "#3a4150" },
+      "text-primary": { "role": "neutral", "displayName": "Text Primary", "canonical": "#e8eaed" },
+      "text-secondary": { "role": "neutral", "displayName": "Text Secondary", "canonical": "#a3aab8" },
+      "text-tertiary": { "role": "neutral", "displayName": "Text Tertiary (decorative icons only, 3:1)", "canonical": "#6b7280" },
+      "text-caption": { "role": "neutral", "displayName": "Text Caption (read continuously, 4.5:1)", "canonical": "#838a99" },
+      "text-on-accent": { "role": "neutral", "displayName": "Text On Accent", "canonical": "#0a0b0e" }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Panel header h2 — one per section." },
+      "body": { "displayName": "Body", "purpose": "Default reading size for descriptions, findings, table cells." },
+      "label": { "displayName": "Label", "purpose": "Uppercase group labels, table headers, kv field names — always on text-caption." },
+      "mono": { "displayName": "Mono", "purpose": "Every hex address, hash, offset, and numeric table column; tabular-nums." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "spin", "value": "spin 0.9s linear infinite (disabled under prefers-reduced-motion: reduce)", "purpose": "Loader2 icon on the primary button while an AI report is generating." },
+      { "name": "chevron-rotate", "value": "transform: rotate(90deg), transition transform 0.12s ease", "purpose": "Import-group disclosure chevron on open/close." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "860px (max-width)" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single primary action in the app — 'Generate report' inside the AI panel. Only button that takes the AI accent.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Generate report</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: #a684ff; color: #0a0b0e; border: none; border-radius: 4px; padding: 0.55rem 1.1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; } .ds-btn-primary:hover:not(:disabled) { filter: brightness(1.1); } .ds-btn-primary:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Neutral action button — download indicators/report.",
+      "html": "<button class=\"ds-btn-secondary\" type=\"button\">Download indicators (.json)</button>",
+      "css": ".ds-btn-secondary { background: #191c23; color: #e8eaed; border: 1px solid #2b303b; border-radius: 4px; padding: 0.5rem 0.9rem; font-size: 0.82rem; cursor: pointer; } .ds-btn-secondary:hover { background: #1c2029; border-color: #3a4150; } .ds-btn-secondary:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Severity Pill",
+      "kind": "chip",
+      "refersTo": "severity-pill-high",
+      "description": "Icon + label + color together — never color alone. High/medium/low variants share this shape.",
+      "html": "<span class=\"ds-severity-pill ds-severity-pill--high\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>High</span>",
+      "css": ".ds-severity-pill { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.68rem; font-weight: 700; padding: 0.12rem 0.45rem; border-radius: 4px; } .ds-severity-pill--high { background: #2a1417; color: #f2555a; } .ds-severity-pill--medium { background: #2a2116; color: #e8a33d; } .ds-severity-pill--low { background: #191c23; color: #a3aab8; }"
+    },
+    {
+      "name": "Flag Tag",
+      "kind": "chip",
+      "refersTo": "tag-flag",
+      "description": "Flags a table row's value as suspicious (section anomalies, suspicious-keyword strings).",
+      "html": "<span class=\"ds-tag ds-tag--flag\">HIGH_ENTROPY</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.68rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 4px; background: #191c23; color: #a3aab8; border: 1px solid #2b303b; white-space: nowrap; } .ds-tag--flag { background: #2a2116; color: #e8a33d; border-color: rgba(232,163,61,0.35); }"
+    },
+    {
+      "name": "Nav Rail Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Section rail row: icon + label + optional severity-aware count badge. Active state is solid-filled.",
+      "html": "<button class=\"ds-nav-item ds-nav-item--active\" type=\"button\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z\"/></svg><span>Header</span></button>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 0.55rem; width: 100%; padding: 0.45rem 0.6rem; border: none; background: transparent; color: #a3aab8; border-radius: 4px; font-size: 0.85rem; text-align: left; cursor: pointer; } .ds-nav-item:hover { background: #1c2029; color: #e8eaed; } .ds-nav-item--active { background: #191c23; color: #e8eaed; font-weight: 600; } .ds-nav-item:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; }"
+    },
+    {
+      "name": "AI Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item-ai-active",
+      "description": "The one nav item that carries the AI accent at rest and when active — the system's sole scoped exception.",
+      "html": "<button class=\"ds-nav-item-ai ds-nav-item-ai--active\" type=\"button\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z\"/></svg><span>AI Report</span></button>",
+      "css": ".ds-nav-item-ai { display: flex; align-items: center; gap: 0.55rem; width: 100%; padding: 0.45rem 0.6rem; border: none; background: transparent; color: #a684ff; border-radius: 4px; font-size: 0.85rem; text-align: left; cursor: pointer; } .ds-nav-item-ai--active { background: #1a1530; }"
+    },
+    {
+      "name": "Dropzone",
+      "kind": "custom",
+      "refersTo": "dropzone",
+      "description": "The entire pre-load surface — centered, dashed border, no nav rail visible until a file is parsed.",
+      "html": "<div class=\"ds-dropzone\" role=\"button\" tabindex=\"0\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V3m0 0L7 8m5-5l5 5\"/></svg><p class=\"ds-dropzone__title\">Drop a Windows PE file here, or click to browse</p><p class=\"ds-dropzone__subtitle\">Parsing runs entirely in your browser. The file is never uploaded anywhere.</p></div>",
+      "css": ".ds-dropzone { width: min(560px, 100%); border: 1px dashed #3a4150; border-radius: 6px; padding: 3rem 2rem; text-align: center; cursor: pointer; background: #111318; color: #6b7280; transition: border-color 0.15s ease, background 0.15s ease; } .ds-dropzone:hover { border-color: #5b9dff; background: #191c23; } .ds-dropzone__title { margin: 0 0 0.35rem; font-weight: 600; font-size: 0.95rem; color: #e8eaed; } .ds-dropzone__subtitle { margin: 0; color: #a3aab8; font-size: 0.85rem; }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The core data-density primitive — property tables for sections, exports, strings. Uppercase caption headers, tabular-nums cells, flagged-row tint.",
+      "html": "<table class=\"ds-data-table\"><thead><tr><th>Name</th><th>Entropy</th></tr></thead><tbody><tr class=\"ds-data-table__row--flagged\"><td class=\"ds-mono\">.text</td><td>7.98</td></tr></tbody></table>",
+      "css": ".ds-data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; } .ds-data-table th { text-align: left; padding: 0.5rem 0.7rem; border-bottom: 1px solid #2b303b; color: #838a99; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; } .ds-data-table td { padding: 0.45rem 0.7rem; border-bottom: 1px solid #21252e; vertical-align: top; font-variant-numeric: tabular-nums; } .ds-data-table tr:hover td { background: #1c2029; } .ds-data-table__row--flagged td { background: #2a2116; } .ds-mono { font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace; font-size: 0.85em; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Disassembler's Bench",
+    "overview": "BinSight reads as a debugger console, not a marketing surface: near-black panel tiers, a fixed left-hand section rail, and dense property tables that assume the reader is a reverse engineer who already knows what RVA, entropy, and TLS callbacks mean. The register is IDA/Ghidra/x64dbg lineage — restrained neutral grays, every address and hash in monospace with tabular numerals, and color spent as signal rather than decoration. Nothing about the surface performs enthusiasm; it just lays out the data and gets out of the way.\n\nTwo disciplines hold the world together. First, state is never color-only — every severity indicator pairs an icon and a text label with its color (SeverityPill, nav badges), so the system reads correctly for a colorblind analyst and at a glance for everyone else. Second, color is spent sparingly: severity red/amber/gray is reserved for real flags and never leaks into chrome, and the single violet accent is confined to the AI Report section by rule, not by accident — verified in the shipped CSS, --ai-accent and its -bg/-border pairs appear in exactly one component file (AiReportPanel.tsx) and the AI nav item's own selectors.\n\nThere are no shadows anywhere in this system. Depth is conveyed entirely by a five-step background ladder (--bg-shell to --bg-panel to --bg-elevated to --bg-hover, plus a recessed --bg-inset for form controls) and 1px borders — a flat, tonal-layering world, consistent with the analyst-tool references it draws from.",
+    "keyCharacteristics": [
+      "Dark, near-black panel tiers with no drop shadows — depth is tonal, not lifted.",
+      "Every address, hash, offset, and byte count is monospace with tabular numerals.",
+      "Severity color (red/amber/gray) is reserved exclusively for real heuristic flags; it never decorates chrome.",
+      "One violet accent (--ai-accent) exists, and it appears nowhere outside the AI Report nav item and panel.",
+      "State is always icon + label + color together — never color alone."
+    ],
+    "rules": [
+      { "name": "The Caption-vs-Tertiary Rule", "body": "--text-tertiary (#6b7280) only meets a 3:1 contrast floor and is reserved for decorative, icon-only elements. Any caption-weight text that is actually read uses --text-caption (#838a99, 5.36:1) instead. This split exists because the finish-review pass caught caption text failing the 4.5:1 body-text floor on --text-tertiary; don't collapse the two tokens back into one.", "section": "colors" },
+      { "name": "The Confined Accent Rule", "body": "--ai-accent and its -bg/-border pairs are used only inside the AI Report nav item and the AI Report panel. No other button, link, or chrome element may take the violet — its scarcity is what keeps the dashboard, not the AI feature, reading as the product.", "section": "colors" },
+      { "name": "The Real-Severity Rule", "body": "A nav badge or table highlight only takes an alarm color (red/amber) when it is backed by an actual HeuristicSeverity value. A plain item count with no severity of its own renders in the neutral badge tone, never red, so that red keeps meaning 'real severity' everywhere it appears.", "section": "colors" },
+      { "name": "The Tabular-Nums Rule", "body": "Any numeric or hex value in a data table or key/value list gets font-variant-numeric: tabular-nums so stacked numbers align vertically.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "No component uses box-shadow, filter: drop-shadow, or backdrop-filter. Depth is read entirely from background-tier and border-tier steps.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do pair every state indicator with an icon and a text label alongside its color — never rely on color alone (severity pills, nav badges).",
+      "Do use the monospace stack with tabular numerals for every address, hash, offset, and byte count.",
+      "Do keep --ai-accent confined to the AI Report nav item and panel; see The Confined Accent Rule.",
+      "Do use --text-caption (not --text-tertiary) for any caption-weight text that is actually read continuously (table headers, field labels, hints) — reserve --text-tertiary for decorative icons only.",
+      "Do convey depth with the background-tier and border-tier ladders, never with shadows."
+    ],
+    "donts": [
+      "Don't apply severity red/amber to a nav badge or table highlight that isn't backed by a real HeuristicSeverity value — plain counts stay neutral gray.",
+      "Don't introduce a second saturated accent color; the system's entire 'foreignness' budget is spent on one violet, scoped to one feature.",
+      "Don't add box-shadow, drop-shadow, or backdrop-filter anywhere — this system is flat by rule, not by omission.",
+      "Don't reuse --text-tertiary for body, label, or hint copy that must clear a 4.5:1 contrast floor — it only clears 3:1 and is reserved for decorative icons."
+    ]
+  }
+}

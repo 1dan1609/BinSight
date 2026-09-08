@@ -1,45 +1,45 @@
+import { Download } from "lucide-react";
 import type { IndicatorsJson } from "@pe-analyzer/shared-types";
+import { downloadTextFile } from "../lib/downloadTextFile";
 
-interface DownloadButtonsProps {
-  indicators: IndicatorsJson;
-  reportMarkdown?: string;
-}
-
-function downloadTextFile(filename: string, content: string, mimeType: string): void {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
-export default function DownloadButtons({ indicators, reportMarkdown }: DownloadButtonsProps) {
+export function DownloadIndicatorsButton({ indicators }: { indicators: IndicatorsJson }) {
   const baseName = indicators.hashes.sha256.slice(0, 12);
-
   return (
-    <div className="download-buttons">
-      {reportMarkdown && (
-        <button
-          type="button"
-          onClick={() => downloadTextFile(`binsight-report-${baseName}.md`, reportMarkdown, "text/markdown")}
-        >
-          Download report (.md)
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() =>
-          downloadTextFile(
-            `binsight-indicators-${baseName}.json`,
-            JSON.stringify(indicators, null, 2),
-            "application/json",
-          )
-        }
-      >
-        Download indicators (.json)
-      </button>
-    </div>
+    <button
+      type="button"
+      className="secondary"
+      onClick={() =>
+        downloadTextFile(
+          `binsight-indicators-${baseName}.json`,
+          JSON.stringify(indicators, null, 2),
+          "application/json",
+        )
+      }
+    >
+      <Download size={14} aria-hidden="true" style={{ marginRight: "0.4rem", verticalAlign: "-2px" }} />
+      Download indicators (.json)
+    </button>
+  );
+}
+
+export function DownloadReportButton({
+  indicators,
+  reportMarkdown,
+}: {
+  indicators: IndicatorsJson;
+  reportMarkdown: string;
+}) {
+  const baseName = indicators.hashes.sha256.slice(0, 12);
+  return (
+    <button
+      type="button"
+      className="secondary"
+      onClick={() =>
+        downloadTextFile(`binsight-report-${baseName}.md`, reportMarkdown, "text/markdown")
+      }
+    >
+      <Download size={14} aria-hidden="true" style={{ marginRight: "0.4rem", verticalAlign: "-2px" }} />
+      Download report (.md)
+    </button>
   );
 }
