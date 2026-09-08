@@ -149,7 +149,9 @@ packages/shared-types/src/{indicators,report}.ts
 .dockerignore
 ```
 
-Not created yet (referenced in the original plan, still accurate targets): `infra/{docker-compose.yml,Caddyfile,.env.example,RUNBOOK.md}` (tied to Oracle VM step), `.github/workflows/{codeql,security-scan,fuzz,cd}.yml`, `.github/dependabot.yml`, `docs/{ARCHITECTURE.md,SECURITY.md,THREAT_MODEL.md}`.
+`docs/ARCHITECTURE.md` exists — it's the original plan-mode document, preserved verbatim as
+historical rationale (why hybrid client/server, why Oracle VM, etc.), **not current status**; it
+says so at its own top. Not created yet: `infra/{docker-compose.yml,Caddyfile,.env.example,RUNBOOK.md}` (tied to Oracle VM step), `.github/workflows/{codeql,security-scan,fuzz,cd}.yml`, `.github/dependabot.yml`, `docs/{SECURITY.md,THREAT_MODEL.md}`.
 
 ## Key security controls (see full plan for the complete table)
 
@@ -193,5 +195,5 @@ stay safe to clone, scan, and fork.
 MIT. Verify every new dependency stays MIT/Apache/BSD-compatible (especially any future Rust crate or
 YARA-WASM binding) — avoid GPL/AGPL.
 
-Full original plan with rationale: see conversation history (this project was built primarily in one
-long Claude Code session — `docs/ARCHITECTURE.md` doesn't exist yet to summarize it independently).
+Full original plan with rationale: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the plan-mode
+document from before any code existed, preserved as historical record of *why*, not current status.
