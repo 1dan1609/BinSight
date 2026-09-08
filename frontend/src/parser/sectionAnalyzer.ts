@@ -34,16 +34,49 @@ const STANDARD_SECTION_NAMES = new Set([
   ".reloc",
   ".tls",
   ".debug",
+  ".eh_frame",
 ]);
+
+function isStandardSectionName(name: string): boolean {
+  const lower = name.toLowerCase();
+  return STANDARD_SECTION_NAMES.has(lower) || lower.startsWith(".debug");
+}
 
 function decodeFlags(value: number, table: [number, string][]): string[] {
   return table.filter(([bit]) => (value & bit) === bit).map(([, name]) => name);
+}
+
+const COFF_SYMBOL_ENTRY_SIZE = 18;
+const LONG_NAME_PATTERN = /^\/(\d+)$/;
+
+/**
+ * Section names longer than 8 bytes don't fit the fixed-width field and are stored instead as
+ * "/N", where N is a decimal offset into the COFF string table (which immediately follows the
+ * symbol table). Falls back to the raw "/N" form if the table is absent or the offset is bad.
+ */
+function resolveSectionName(
+  reader: SafeReader,
+  rawName: string,
+  pointerToSymbolTable: number,
+  numberOfSymbols: number,
+): string {
+  const match = LONG_NAME_PATTERN.exec(rawName);
+  if (!match?.[1] || pointerToSymbolTable === 0) return rawName;
+
+  const stringTableOffset = pointerToSymbolTable + numberOfSymbols * COFF_SYMBOL_ENTRY_SIZE;
+  const nameOffset = stringTableOffset + Number(match[1]);
+  if (!reader.inBounds(nameOffset)) return rawName;
+
+  const resolved = reader.cString(nameOffset, 64);
+  return resolved.length > 0 ? resolved : rawName;
 }
 
 export function parseSections(
   reader: SafeReader,
   sectionTableOffset: number,
   numberOfSections: number,
+  pointerToSymbolTable: number,
+  numberOfSymbols: number,
   warnings: string[],
 ): ParsedSection[] {
   const sections: ParsedSection[] = [];
@@ -55,7 +88,8 @@ export function parseSections(
       break;
     }
 
-    const name = reader.fixedAscii(offset, 8);
+    const rawName = reader.fixedAscii(offset, 8);
+    const name = resolveSectionName(reader, rawName, pointerToSymbolTable, numberOfSymbols);
     const virtualSize = reader.u32(offset + 8);
     const virtualAddress = reader.u32(offset + 12);
     const rawSize = reader.u32(offset + 16);
@@ -86,7 +120,7 @@ export function parseSections(
     if (entropy > HIGH_ENTROPY_THRESHOLD) {
       anomalies.push("HIGH_ENTROPY");
     }
-    if (!STANDARD_SECTION_NAMES.has(name.toLowerCase()) && name.length > 0) {
+    if (!isStandardSectionName(name) && name.length > 0) {
       anomalies.push("NON_STANDARD_NAME");
     }
 

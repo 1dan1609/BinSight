@@ -20,7 +20,14 @@ export async function buildIndicators(buffer: ArrayBuffer): Promise<BuildIndicat
 
   const header = parsePeHeader(reader); // throws PEParseError for non-PE / malformed input — caller handles it
 
-  const sections = parseSections(reader, header.sectionTableOffset, header.numberOfSections, warnings);
+  const sections = parseSections(
+    reader,
+    header.sectionTableOffset,
+    header.numberOfSections,
+    header.pointerToSymbolTable,
+    header.numberOfSymbols,
+    warnings,
+  );
   const imports = parseImports(reader, header.dataDirectories, sections, header.isPE32Plus, warnings);
   const exports = parseExports(reader, header.dataDirectories, sections, warnings);
   const strings = extractStrings(fileBytes);

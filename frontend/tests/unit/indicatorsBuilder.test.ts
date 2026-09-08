@@ -53,6 +53,26 @@ describe("buildIndicators against a real, self-compiled benign PE fixture", () =
     expect(indicators.sections[0]?.name).toBe(".text");
     expect(indicators.sections[0]?.entropy).toBeGreaterThan(0);
     expect(indicators.sections[0]?.entropy).toBeLessThanOrEqual(8);
+
+    // MinGW stores names >8 chars (debug sections, .eh_frame) via the COFF long-name form
+    // ("/N" -> string table offset) rather than inline — this fixture is a real-world case of
+    // that, and the parser must resolve it rather than surfacing the raw "/N" placeholder.
+    expect(indicators.sections.map((s) => s.name)).toEqual([
+      ".text",
+      ".data",
+      ".rdata",
+      ".eh_frame",
+      ".bss",
+      ".idata",
+      ".CRT",
+      ".tls",
+      ".debug_aranges",
+      ".debug_info",
+      ".debug_abbrev",
+      ".debug_line",
+      ".debug_frame",
+      ".debug_str",
+    ]);
     // A freshly-compiled, unpacked binary should not trip the packing heuristic.
     for (const section of indicators.sections) {
       expect(section.anomalies).not.toContain("HIGH_ENTROPY");

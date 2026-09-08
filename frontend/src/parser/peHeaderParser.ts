@@ -83,6 +83,8 @@ export function parsePeHeader(reader: SafeReader): ParsedPeHeader {
   const numberOfSectionsRaw = reader.u16(fileHeaderOffset + 2);
   const numberOfSections = Math.min(numberOfSectionsRaw, MAX_SECTIONS);
   const timeDateStamp = reader.u32(fileHeaderOffset + 4);
+  const pointerToSymbolTable = reader.u32(fileHeaderOffset + 8);
+  const numberOfSymbols = reader.u32(fileHeaderOffset + 12);
   const sizeOfOptionalHeader = reader.u16(fileHeaderOffset + 16);
   const characteristicsRaw = reader.u16(fileHeaderOffset + 18);
 
@@ -132,5 +134,7 @@ export function parsePeHeader(reader: SafeReader): ParsedPeHeader {
     sizeOfImage,
     sectionTableOffset,
     dataDirectories,
+    pointerToSymbolTable,
+    numberOfSymbols,
   };
 }
