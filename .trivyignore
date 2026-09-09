@@ -1,0 +1,10 @@
+# CVE-2026-56854 — golang.org/x/crypto/ssh auth bypass (unenforced source-address restrictions).
+# Present in the upstream caddy:2-alpine image's statically-linked caddy binary; no patched
+# caddy:2-alpine build exists yet as of 2026-09-09 (confirmed: re-pulling caddy:2-alpine still
+# resolves the same digest carrying golang.org/x/crypto v0.52.0).
+# Not exploitable here: frontend/Caddyfile.standalone runs Caddy purely as a static file server
+# over plain HTTP (see the file — `root`, `encode gzip`, `try_files`, `file_server`, nothing else).
+# No SSH server/client functionality is configured or reachable through this app.
+# Revisit and remove this line once caddy:2-alpine rebases onto a patched x/crypto — tracked via
+# .github/dependabot.yml's docker ecosystem watching frontend/Dockerfile.
+CVE-2026-56854
