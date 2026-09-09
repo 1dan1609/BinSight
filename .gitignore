@@ -10,4 +10,10 @@ coverage/
 .vite/
 *.tsbuildinfo
 infra/*.db
-**/.impeccable/review/
+**/.impeccable/
+
+# Internal planning/handoff docs — not needed to build or run the app, kept locally only.
+CLAUDE.md
+docs/ARCHITECTURE.md
+frontend/PRODUCT.md
+frontend/DESIGN.md
