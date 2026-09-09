@@ -32,5 +32,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Same reason as ci.yml: shared-types' package.json points "types"/"main" at ./dist, which
+      # only exists after this build, so the fuzz suite's import of @pe-analyzer/shared-types
+      # fails to resolve on a clean checkout without it.
+      - name: Build shared-types
+        run: pnpm --filter @pe-analyzer/shared-types build
+
       - name: Fuzz the PE parser against malformed/adversarial input
         run: pnpm --filter frontend test:fuzz
