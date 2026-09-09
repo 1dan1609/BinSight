@@ -704,6 +704,11 @@ select {
   background: var(--bg-inset);
 }
 
+.byok-fields .optional {
+  color: var(--text-caption);
+  font-weight: 400;
+}
+
 .hint {
   font-size: 0.78rem;
   color: var(--text-caption);
