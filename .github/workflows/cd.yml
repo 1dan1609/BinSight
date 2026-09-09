@@ -53,7 +53,11 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          # tr strips \r: a key pasted into the GitHub secret from a Windows clipboard/terminal
+          # (e.g. PowerShell's Get-Content) commonly carries CRLF line endings, which OpenSSH's
+          # key parser rejects outright with no useful error - normalize defensively instead of
+          # relying on how it was pasted.
+          printf '%s' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           # Host key pinned to the VM's actual ed25519 fingerprint, verified directly against
           # /etc/ssh/ssh_host_ed25519_key.pub on the box itself — not trust-on-first-use, since
