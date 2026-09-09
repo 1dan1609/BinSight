@@ -1,0 +1,39 @@
+services:
+  backend:
+    image: ghcr.io/1dan1609/binsight-backend:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - backend-data:/app/data
+    networks:
+      - internal
+    # No ports published to the host: only reachable from the frontend container's Caddy
+    # reverse proxy, over the internal network. The raw Fastify service is never internet-facing.
+
+  frontend:
+    image: ghcr.io/1dan1609/binsight-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - internal
+
+networks:
+  internal:
+
+volumes:
+  backend-data:
+  caddy-data:
+  caddy-config:
