@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # Covers the whole pnpm workspace (frontend, backend, packages/shared-types) from the root
+  # pnpm-lock.yaml — Dependabot resolves workspace members on its own from pnpm-workspace.yaml.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: "/backend"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

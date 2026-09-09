@@ -1,0 +1,36 @@
+name: Parser Fuzz
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/src/parser/**"
+      - "frontend/tests/fuzz/**"
+      - "packages/shared-types/**"
+  schedule:
+    - cron: "0 3 * * *" # nightly, 03:00 UTC
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Fuzz the PE parser against malformed/adversarial input
+        run: pnpm --filter frontend test:fuzz

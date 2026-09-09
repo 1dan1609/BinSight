@@ -1,0 +1,54 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks needs full history, not just the merge commit
+
+      # Free for personal-account repos (this one); GITLEAKS_LICENSE is only required for orgs.
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trivy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            dockerfile: backend/Dockerfile
+          - name: frontend
+            dockerfile: frontend/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.name }} image
+        run: docker build -f ${{ matrix.dockerfile }} -t binsight-${{ matrix.name }}:scan .
+
+      # trivy-action and trivy itself were both hit by a supply-chain compromise in March 2026
+      # (malicious releases injected a credential stealer). Pinned here to a commit built after
+      # that incident, with the Trivy binary version pinned explicitly rather than left to drift.
+      - name: Scan ${{ matrix.name }} image for CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: binsight-${{ matrix.name }}:scan
+          version: v0.72.0
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          exit-code: "1"

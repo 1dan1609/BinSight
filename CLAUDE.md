@@ -11,51 +11,65 @@ component specs) — read it before touching any UI file, and update it if you c
 system, not just the plan file. This file covers architecture/engineering decisions and session
 handoff state.
 
-## ⏸️ SESSION HANDOFF — read this first
+## Session state
 
-The user paused here at the end of a long session and is picking this back up later, possibly in
-a fresh Claude Code instance. **Do these two things before anything else:**
+Docker was installed inside WSL2 Ubuntu 24.04 (native Windows/WSL2 both lacked a runtime before
+this) and both Dockerfiles are now **built and runtime-verified**, not just reasoned through:
+`docker build` succeeds for both, and each container was actually run and hit over HTTP
+(`backend` → `GET /healthz` returns `{"status":"ok"}`; `frontend` → Caddy serves the built SPA on
+`:80`). Two real bugs surfaced and were fixed:
+- Both Dockerfiles were missing `tsconfig.base.json` in the early COPY layer — every workspace
+  package's `tsconfig.json` has `"extends": "../../tsconfig.base.json"` (or `../`), so the very
+  first `tsc` invocation failed with `TS5083: Cannot read file`.
+- `backend/Dockerfile`'s runtime stage crashed at container *startup* (not build time): the
+  non-root `app` user has no write access to `/app` (root-owned, created by `WORKDIR`), so
+  `DailyQuota`'s `mkdirSync('./data')` threw `EACCES`. Fixed by pre-creating and `chown`ing
+  `/app/data` before `USER app`.
 
-1. **Ask this exact question again, verbatim in spirit**, before touching Dockerfiles or CI further:
-   > No Docker runtime is available locally (checked both native Windows and WSL2/Ubuntu). Two new
-   > Dockerfiles exist (`backend/Dockerfile`, `frontend/Dockerfile`) that have **never been run** —
-   > carefully reasoned through, not verified. Do you want me to install Docker inside WSL2 so I can
-   > actually run `docker build` and catch real errors now, or proceed without local Docker testing
-   > (first real test becomes the first GitHub Actions run, which needs this pushed to a GitHub repo)?
-
-   Use `AskUserQuestion` with those two options (install Docker in WSL / skip local testing) — do
-   not just pick one silently, and do not re-litigate this if the user already answered it earlier
-   in the same session (only ask fresh if resuming cold, e.g. session start or after "continue").
-
-2. **Read `git log --oneline -15`** to see exactly what's landed. The two most recent commits are
-   the ones this handoff describes:
-   - `Add SQLite daily quota for hosted AI mode; WIP Dockerfiles (UNTESTED)` — the quota feature is
-     done and tested (13/13 backend tests pass); the Dockerfiles are the untested part above.
-   - `Redesign frontend into a PEStudio-style analyst-workbench dashboard` — the full UI redesign,
-     shipped and verified via Impeccable's finish-review cycle (disposition: ship).
+To re-run these checks in a fresh session: `wsl -d Ubuntu -- bash -c "cd /mnt/c/... && docker build -f backend/Dockerfile -t binsight-backend:test ."` (same pattern for frontend). No GitHub remote
+exists yet (`git remote -v` is empty) — pushing/creating the repo is still unstarted and needs the
+user's decision (repo name, public/private, account), not something to do unprompted.
 
 ### What's actually left in Phase 2 (CI/CD security gates — what the user asked for last)
 
-Not started yet:
-- `.github/workflows/security-scan.yml` — Trivy (scan both Docker images once they build cleanly,
-  block on CRITICAL) + gitleaks (secret scanning on every PR).
-- `.github/workflows/codeql.yml` — CodeQL SAST, scheduled + on PR.
-- `.github/workflows/fuzz.yml` — wire `frontend/tests/fuzz/peParserFuzz.test.ts` (already exists,
-  passes locally, just not in CI yet) into a PR-triggered-on-parser-changes + nightly-scheduled job.
-- `.github/dependabot.yml` — npm + Dockerfile + GitHub Actions version updates.
-- Branch protection requiring all of the above before merge to `main` (this one needs the user to
-  actually push to GitHub and configure it in repo settings — you can't do this from the CLI).
+Done, written and locally verified against the real images/tests (not just reasoned through —
+see below for how each was checked):
+- `.github/workflows/security-scan.yml` — Trivy (scans both Docker images, blocks on CRITICAL,
+  `ignore-unfixed: true`) + gitleaks (secret scanning on every PR, free tier since this is a
+  personal-account repo, not an org). Both `aquasecurity/trivy-action` and `gitleaks/gitleaks-action`
+  are pinned to full commit SHAs rather than tags — `trivy-action` and the `trivy` binary itself
+  were both hit by a real supply-chain compromise in March 2026 (malicious releases injected a
+  credential stealer); pinned commits here were verified to postdate that incident. Verified
+  locally: built both images in WSL2 Docker, ran `aquasec/trivy:0.72.0` against each with the same
+  flags the workflow uses. This is how two real CRITICAL CVEs were caught and fixed rather than
+  shipped: `backend/Dockerfile` now strips npm/corepack's vendored `tar` (CVE-2026-59873) out of
+  the runtime stage (npm/corepack are dead weight there anyway — the container invokes `node
+  dist/server.js` directly, never `npm`); `frontend`'s finding (CVE-2026-56854, in
+  `golang.org/x/crypto/ssh`, statically linked into the upstream `caddy:2-alpine` binary with no
+  patched image available yet) is documented and suppressed via `.trivyignore` at repo root with a
+  dated justification — Caddy is configured here purely as a static file server
+  (`frontend/Caddyfile.standalone`), no SSH functionality is reachable.
+- `.github/workflows/codeql.yml` — CodeQL SAST (`javascript-typescript` covers the whole monorepo:
+  frontend, backend, shared-types), on push/PR to `main` + weekly schedule.
+- `.github/workflows/fuzz.yml` — wires `frontend/tests/fuzz/peParserFuzz.test.ts` into CI, triggered
+  on PRs touching `frontend/src/parser/**`, `frontend/tests/fuzz/**`, or `packages/shared-types/**`,
+  plus a nightly schedule. Re-ran `pnpm --filter frontend test:fuzz` locally to confirm it still
+  passes (8/8) before wiring it in.
+- `.github/dependabot.yml` — npm (root directory; Dependabot resolves the pnpm workspace members
+  from `pnpm-workspace.yaml` on its own), Dockerfile (`/backend` and `/frontend` separately), and
+  github-actions ecosystems, weekly.
+
+Not started — needs the user, can't be done from the CLI:
+- Actually pushing this to GitHub (no remote configured yet) and creating the repo.
+- Branch protection requiring all of the above checks before merge to `main` — configured in GitHub
+  repo settings after the push.
 
 Explicitly **out of scope** for this pass (don't drift into it unasked): the full CD pipeline
 (GHCR push + SSH deploy to the Oracle VM) and `infra/docker-compose.yml`/`infra/Caddyfile` — those
 are tied to the Oracle VM step, which needs the user's cloud account access and hasn't happened yet.
 
-### Before writing more CI workflow files
-
-Verify the Dockerfiles actually build (per however the handoff question above gets answered) —
-writing `security-scan.yml` to run Trivy against images that don't build is wasted work. If the
-user picks "skip local testing," write the workflow anyway (it's the only way to ever test it) but
-say plainly that it's unverified until the first real CI run, don't imply it's confirmed working.
+The Dockerfiles are confirmed building and running correctly (see Session state above), so
+`security-scan.yml`'s Trivy step now has real images to scan — this is no longer blocked.
 
 No GitHub remote exists yet for this repo (`git remote -v` is empty) — pushing/creating the repo
 on GitHub is also unstarted and needs the user's decision (repo name, public/private, their
@@ -133,7 +147,7 @@ frontend/src/components/   # FileDropzone, ProviderSelector, ReportView, Downloa
 frontend/src/lib/downloadTextFile.ts
 frontend/tests/{unit,fuzz}/
 frontend/fixtures/         # self-compiled BENIGN tiny PE samples only — never real malware
-frontend/Dockerfile        # UNTESTED — see handoff section
+frontend/Dockerfile        # builds and runs verified locally via WSL2 Docker
 frontend/Caddyfile.standalone
 frontend/DESIGN.md         # shipped design system, ground-truth-recorded — read before UI work
 frontend/PRODUCT.md
@@ -143,27 +157,32 @@ backend/src/providers/{ProviderClient,GroqHostedProvider,OpenAICompatibleProvide
 backend/src/lib/{dailyQuota,logger}.ts
 backend/src/config/env.ts
 backend/src/plugins/security.ts
-backend/Dockerfile         # UNTESTED — see handoff section
+backend/Dockerfile         # builds and runs verified locally via WSL2 Docker
 packages/shared-types/src/{indicators,report}.ts
-.github/workflows/ci.yml   # exists: lint/typecheck/test/build on push+PR
+.github/workflows/ci.yml   # lint/typecheck/test/build on push+PR
+.github/workflows/security-scan.yml  # Trivy (both images, blocks on CRITICAL) + gitleaks
+.github/workflows/codeql.yml         # CodeQL SAST, push+PR to main, weekly schedule
+.github/workflows/fuzz.yml           # peParserFuzz wired in, PR-on-parser-changes + nightly
+.github/dependabot.yml     # npm (pnpm workspace), Dockerfile x2, github-actions
+.trivyignore                # documented CRITICAL suppression — see Session state above
 .dockerignore
 ```
 
 `docs/ARCHITECTURE.md` exists — it's the original plan-mode document, preserved verbatim as
 historical rationale (why hybrid client/server, why Oracle VM, etc.), **not current status**; it
-says so at its own top. Not created yet: `infra/{docker-compose.yml,Caddyfile,.env.example,RUNBOOK.md}` (tied to Oracle VM step), `.github/workflows/{codeql,security-scan,fuzz,cd}.yml`, `.github/dependabot.yml`, `docs/{SECURITY.md,THREAT_MODEL.md}`.
+says so at its own top. Not created yet: `infra/{docker-compose.yml,Caddyfile,.env.example,RUNBOOK.md}` (tied to Oracle VM step), `.github/workflows/cd.yml`, `docs/{SECURITY.md,THREAT_MODEL.md}`.
 
 ## Key security controls (see full plan for the complete table)
 
 | Surface | Controls |
 |---|---|
-| PE parsing (client) | Web Worker isolation, bounds-checked reads via `SafeReader`, hard caps on all counts regardless of header claims, wall-clock timeout owned by the *main thread* (`Promise.race` + `worker.terminate()`), no dynamic code execution, fuzz-tested (locally — not yet wired into CI) |
+| PE parsing (client) | Web Worker isolation, bounds-checked reads via `SafeReader`, hard caps on all counts regardless of header claims, wall-clock timeout owned by the *main thread* (`Promise.race` + `worker.terminate()`), no dynamic code execution, fuzz-tested (`.github/workflows/fuzz.yml`, PR-on-parser-changes + nightly) |
 | Indicators JSON (backend) | Re-validated server-side with the same strict Zod schema (`.strict()`) — never trust the client, since anyone can POST directly bypassing the browser parser |
 | AI prompt | Untrusted indicator data delimited/tagged with explicit data-vs-instruction framing, truncated to bound size; model has no tools/function-calling |
 | Hosted AI key | Per-IP rate limit + SQLite daily global quota (hard-caps worst-case spend to $0, implemented) + payload-shape validation |
 | BYOK key | In-memory only for the single call, never logged (pino redact) or persisted, TLS-only, hardcoded provider base-URL allow-list (no SSRF — user selects an enum, never supplies a URL) |
 | Public VM | Not built yet — planned: SSH key-only + non-root deploy user + fail2ban, ufw restricted to 22/80/443 matched at Oracle's NSG layer, Caddy auto-TLS, unattended-upgrades |
-| CI pipeline | Only lint/typecheck/test/build exist today. gitleaks + CodeQL + Trivy + Dependabot are the current work-in-progress (see handoff section) |
+| CI pipeline | lint/typecheck/test/build, Trivy (blocks on CRITICAL, both images), gitleaks (every PR), CodeQL (push/PR + weekly), Dependabot (npm/Docker/GitHub Actions, weekly). Not yet run for real — no GitHub remote exists yet, so the only verification so far is local (see Session state) |
 
 ## Roadmap
 
@@ -175,9 +194,10 @@ says so at its own top. Not created yet: `infra/{docker-compose.yml,Caddyfile,.e
   download; live-browser-tested end-to-end (found and fixed two real Vite/Windows dev-server bugs
   along the way). Manual Oracle VM deploy **not done** — no Oracle account access yet.
 - **Phase 2 — Hardening + full CI/CD**: **in progress**. Done: BYOK mode, suspicious-API heuristics,
-  SQLite daily quota, AI output sanitization pass. Not done: parser fuzz suite wired into CI, full
-  blocking scan suite (Trivy/CodeQL/gitleaks/Dependabot), CD pipeline (GHCR + SSH deploy) — **this is
-  where the handoff section above picks up.**
+  SQLite daily quota, AI output sanitization pass, both Dockerfiles built/runtime-verified locally,
+  full blocking scan suite (Trivy/CodeQL/gitleaks/Dependabot) written and locally verified. Not
+  done: pushing to GitHub (no remote yet, needs the user's decision), branch protection, CD pipeline
+  (GHCR + SSH deploy) — tied to the Oracle VM step below, which needs the user's cloud account.
 - **Phase 3 — Stretch (optional)**: not started. Client-side Markdown→PDF, Playwright E2E, Rust/WASM
   entropy calculator, YARA-via-WASM, ELF/Office-macro parsers, `/healthz` + observability, Turnstile
   if hosted-mode abuse is observed.

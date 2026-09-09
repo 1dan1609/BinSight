@@ -10,7 +10,7 @@ WORKDIR /repo
 # Copy workspace manifests first for layer caching. All three members' package.json files are
 # needed even though this image only builds backend: pnpm validates the on-disk workspace
 # structure against pnpm-lock.yaml's importers, and a missing member fails the install.
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY packages/shared-types/package.json packages/shared-types/package.json
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
@@ -34,6 +34,17 @@ WORKDIR /app
 # Non-root: this process never needs to be root, and it's the network-facing half of the app.
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /deploy/backend .
+
+# DailyQuota's SQLite file lives under ./data (relative to WORKDIR) and mkdir's it at startup;
+# WORKDIR is root-owned by default, so the non-root user below needs this pre-created and owned.
+RUN mkdir -p /app/data && chown app:app /app/data
+
+# The base image's bundled npm/corepack are never used at runtime (CMD calls node directly on
+# the pnpm-deployed build output) and npm's vendored `tar` has shipped a CRITICAL CVE
+# (CVE-2026-59873) in every node:20-alpine build to date — removing them drops it from the image
+# entirely instead of waiting on an upstream fix or carrying a Trivy ignore for unused code.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 
 USER app
 ENV NODE_ENV=production

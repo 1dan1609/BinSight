@@ -6,7 +6,7 @@ WORKDIR /repo
 
 # All three workspace members' package.json files are needed even though this image only builds
 # frontend: pnpm validates the on-disk workspace structure against pnpm-lock.yaml's importers.
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY packages/shared-types/package.json packages/shared-types/package.json
 COPY frontend/package.json frontend/package.json
 COPY backend/package.json backend/package.json
