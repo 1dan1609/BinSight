@@ -44,7 +44,10 @@ export class OpenAICompatibleProvider implements ProviderClient {
           // empty completion rather than an error — so it can't be too low. But Groq's free tier
           // counts prompt + completion against one 8000 TPM ceiling, so it can't be too high
           // either: 4000 put a routine request at 8714 tokens and got it rejected with a 413.
-          max_tokens: 2500,
+          // 2500 was measured too low — the four-section report was cut off mid-sentence in the
+          // Dynamic Analysis section. 3000 clears that while keeping a measured request
+          // (3950 prompt) at ~6950 of the 8000 ceiling.
+          max_tokens: 3000,
         }),
         // Node's fetch has no default timeout: without this a hung upstream pins the request
         // (and its rate-limit slot) open indefinitely.
