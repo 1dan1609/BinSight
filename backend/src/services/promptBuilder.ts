@@ -23,10 +23,41 @@ Rules:
   with it.
 - Base your analysis only on the indicators provided. Do not invent findings, hashes, or
   behavior you cannot support from the data given.
-- Produce your report as clean Markdown with these sections: "## Summary", "## Key Flags",
-  "## Suspicious Indicators", and "## Recommended Next Steps" (concrete dynamic-analysis
-  suggestions: sandboxing, network monitoring, specific tools, what to watch for).
-- Keep it scannable for an expert audience — use bullet points, not long paragraphs.`;
+- Calibrate to the evidence. Many files are benign. If the indicators look like an ordinary
+  compiled program, say so plainly and keep the report short — do not manufacture suspicion to
+  fill sections. Conversely, do not soften genuinely strong indicators.
+- Anchor every claim to a concrete value from the data — a section name, an address, an entropy
+  figure, an imported symbol, an offset. "Suspicious imports" is not useful; "IsDebuggerPresent
+  imported alongside a 7.9-entropy .text" is.
+
+Produce clean Markdown with exactly these four sections:
+
+"## Summary" — What this binary appears to be, and your overall read of it in 2-4 bullets:
+architecture/subsystem, what the toolchain and Rich header suggest about how it was built,
+whether anything about the structure is inconsistent with an ordinary compiled program, and a
+clear statement of how suspicious it looks and why.
+
+"## Key Findings" — The specific static indicators that matter, most significant first. Cover
+what is actually notable in the data: section anomalies, entropy, import/export patterns,
+overlay, TLS callbacks, debug/PDB path, timestamps. Note explicitly when something expected is
+*absent* (no imports at all, stripped debug info) — absence is evidence too.
+
+"## Deep Static Analysis" — Where to point a disassembler (Ghidra, IDA Pro, Binary Ninja). Be
+specific and use the addresses in the data: the entry point, TLS callback addresses (these run
+*before* the entry point, so they are usually the first thing to read), which sections are worth
+disassembling versus ones that look packed and need unpacking first, file offsets for overlay
+data, and which imported functions are worth cross-referencing to find the interesting code.
+Say what the analyst is looking for at each location, not just where to look.
+
+"## Dynamic Analysis" — Only meaningful if the file warrants it. If the static picture suggests
+this could be malicious, describe how to detonate it safely and what to watch: sandbox/VM setup
+and isolation, which API calls to breakpoint or hook, what network behaviour to capture, which
+filesystem and registry paths to monitor (use the actual strings/keys found where possible), and
+how to spot the anti-analysis behaviour the imports hint at. If the file looks benign, say that
+dynamic analysis is not warranted and briefly why, instead of listing generic steps.
+
+Keep it scannable for an expert audience — bullets over paragraphs, no filler, and never restate
+the raw JSON back at the reader.`;
 
 function buildIndicatorsSummary(indicators: IndicatorsJson): string {
   const topStrings = indicators.strings
@@ -46,8 +77,14 @@ function buildIndicatorsSummary(indicators: IndicatorsJson): string {
     hashes: indicators.hashes,
     overallEntropy: indicators.overallEntropy,
     header: indicators.header,
+    // Addresses are included so the report can name concrete places to jump to in a
+    // disassembler; without them the deep-static guidance degrades into generic advice.
     sections: indicators.sections.map((s) => ({
       name: s.name,
+      virtualAddress: s.virtualAddress,
+      virtualSize: s.virtualSize,
+      rawAddress: s.rawAddress,
+      rawSize: s.rawSize,
       entropy: s.entropy,
       characteristics: s.characteristics,
       anomalies: s.anomalies,
