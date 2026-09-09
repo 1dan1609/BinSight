@@ -26,9 +26,31 @@ this) and both Dockerfiles are now **built and runtime-verified**, not just reas
   `DailyQuota`'s `mkdirSync('./data')` threw `EACCES`. Fixed by pre-creating and `chown`ing
   `/app/data` before `USER app`.
 
-To re-run these checks in a fresh session: `wsl -d Ubuntu -- bash -c "cd /mnt/c/... && docker build -f backend/Dockerfile -t binsight-backend:test ."` (same pattern for frontend). No GitHub remote
-exists yet (`git remote -v` is empty) — pushing/creating the repo is still unstarted and needs the
-user's decision (repo name, public/private, account), not something to do unprompted.
+To re-run these checks in a fresh session: `wsl -d Ubuntu -- bash -c "cd /mnt/c/... && docker build -f backend/Dockerfile -t binsight-backend:test ."` (same pattern for frontend).
+
+**Pushed and live**: repo is https://github.com/1dan1609/BinSight (public, `main`). All three
+workflows (`CI`, `CodeQL`, `Security Scan`) are green on `main` as of commit `b20fbe1` — confirmed
+via the Actions API, not just written-and-assumed. Two things surfaced only by actually pushing
+(neither reproducible locally, since local testing can't simulate a true clean CI checkout or a
+real Actions runner):
+- `ci.yml` failed its first-ever run: `pnpm -r typecheck` ran before `shared-types` was built, and
+  `shared-types`'s `package.json` points `types` at `./dist/index.d.ts`, which only exists post-build
+  — backend/frontend couldn't resolve `@pe-analyzer/shared-types` on a genuinely clean checkout (a
+  locally-cached `dist/` from earlier manual builds had been masking this the whole time). Fixed by
+  adding a "Build shared-types" step before typecheck; verified by cloning the pushed repo fresh
+  into a scratch dir and running typecheck/lint/test/build in the exact CI order before pushing the
+  fix.
+- `security-scan.yml`'s `gitleaks` job failed once on the very first run with an opaque
+  `"ERROR: Unexpected exit code [1]"`, despite running `gitleaks detect` directly against the
+  identical git history locally and finding zero leaks. Investigated pinning it down to an older
+  `gitleaks-action` version, but the identical pinned commit then **succeeded** on the very next
+  push with no code change — treated as one-off first-run jitter (plausibly the action's own
+  backend call) rather than a real v3 problem, so left as-is rather than downgrading on weak
+  evidence. Worth a glance if it recurs.
+
+Dependabot's initial catch-up scan opened 11 PRs immediately (some major-version bumps, e.g.
+`vitest` 2→5, `actions/checkout` 4→7) — untouched, left for the user to review/merge at their own
+pace; not something to act on unprompted.
 
 ### What's actually left in Phase 2 (CI/CD security gates — what the user asked for last)
 
@@ -60,20 +82,12 @@ see below for how each was checked):
   github-actions ecosystems, weekly.
 
 Not started — needs the user, can't be done from the CLI:
-- Actually pushing this to GitHub (no remote configured yet) and creating the repo.
 - Branch protection requiring all of the above checks before merge to `main` — configured in GitHub
-  repo settings after the push.
+  repo settings now that the repo exists and CI is green.
 
 Explicitly **out of scope** for this pass (don't drift into it unasked): the full CD pipeline
 (GHCR push + SSH deploy to the Oracle VM) and `infra/docker-compose.yml`/`infra/Caddyfile` — those
 are tied to the Oracle VM step, which needs the user's cloud account access and hasn't happened yet.
-
-The Dockerfiles are confirmed building and running correctly (see Session state above), so
-`security-scan.yml`'s Trivy step now has real images to scan — this is no longer blocked.
-
-No GitHub remote exists yet for this repo (`git remote -v` is empty) — pushing/creating the repo
-on GitHub is also unstarted and needs the user's decision (repo name, public/private, their
-account), not something to do unprompted.
 
 ## Architecture (do not re-litigate — these were deliberately chosen after weighing alternatives)
 
@@ -195,8 +209,8 @@ says so at its own top. Not created yet: `infra/{docker-compose.yml,Caddyfile,.e
   along the way). Manual Oracle VM deploy **not done** — no Oracle account access yet.
 - **Phase 2 — Hardening + full CI/CD**: **in progress**. Done: BYOK mode, suspicious-API heuristics,
   SQLite daily quota, AI output sanitization pass, both Dockerfiles built/runtime-verified locally,
-  full blocking scan suite (Trivy/CodeQL/gitleaks/Dependabot) written and locally verified. Not
-  done: pushing to GitHub (no remote yet, needs the user's decision), branch protection, CD pipeline
+  full blocking scan suite (Trivy/CodeQL/gitleaks/Dependabot), repo pushed to GitHub and all checks
+  green on `main`. Not done: branch protection (needs the user in repo settings), CD pipeline
   (GHCR + SSH deploy) — tied to the Oracle VM step below, which needs the user's cloud account.
 - **Phase 3 — Stretch (optional)**: not started. Client-side Markdown→PDF, Playwright E2E, Rust/WASM
   entropy calculator, YARA-via-WASM, ELF/Office-macro parsers, `/healthz` + observability, Turnstile
