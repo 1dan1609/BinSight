@@ -6,6 +6,8 @@ export interface PromptPair {
 export interface ProviderResult {
   content: string;
   modelUsed: string;
+  /** True when the model stopped because it hit max_tokens, so the report is cut off mid-thought. */
+  hitTokenLimit: boolean;
 }
 
 export interface ProviderClient {

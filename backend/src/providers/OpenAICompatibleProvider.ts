@@ -9,7 +9,7 @@ interface OpenAICompatibleProviderOptions {
 
 interface ChatCompletionResponse {
   model?: string;
-  choices?: { message?: { content?: string } }[];
+  choices?: { message?: { content?: string }; finish_reason?: string }[];
 }
 
 const PROVIDER_TIMEOUT_MS = 60_000;
@@ -39,11 +39,12 @@ export class OpenAICompatibleProvider implements ProviderClient {
             { role: "user", content: prompt.user },
           ],
           temperature: 0.3,
-          // Reasoning models (the hosted default is one) spend part of this budget on reasoning
-          // tokens before emitting any content, and an exhausted budget surfaces as an empty
-          // completion rather than an error. 2000 was not enough headroom for a four-section
-          // report once reasoning is accounted for.
-          max_tokens: 4000,
+          // Two competing constraints. Reasoning models (the hosted default is one) draw on this
+          // budget for reasoning tokens before emitting content, and exhausting it surfaces as an
+          // empty completion rather than an error — so it can't be too low. But Groq's free tier
+          // counts prompt + completion against one 8000 TPM ceiling, so it can't be too high
+          // either: 4000 put a routine request at 8714 tokens and got it rejected with a 413.
+          max_tokens: 2500,
         }),
         // Node's fetch has no default timeout: without this a hung upstream pins the request
         // (and its rate-limit slot) open indefinitely.
@@ -59,6 +60,21 @@ export class OpenAICompatibleProvider implements ProviderClient {
     }
 
     if (!response.ok) {
+      // Capacity errors get a mapped message rather than the provider's raw text: that text is
+      // both unactionable for an end user and carries account identifiers (Groq embeds the
+      // organization ID and a billing link in its 413), which should not reach the browser.
+      // Other statuses keep the provider's message — "the model does not exist" and similar are
+      // exactly what a BYOK user needs to see to fix their own configuration.
+      if (response.status === 413 || response.status === 429) {
+        throw new ProviderError(
+          "The AI provider rejected this request as too large or too frequent. This usually means " +
+            "the free-tier token-per-minute limit was hit — wait a minute and retry, or use your " +
+            "own API key for a higher limit.",
+        );
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new ProviderError("The AI provider rejected the API key.");
+      }
       const body = await response.text().catch(() => "");
       throw new ProviderError(`Provider request failed (${response.status}): ${body.slice(0, 500)}`);
     }
@@ -69,6 +85,10 @@ export class OpenAICompatibleProvider implements ProviderClient {
       throw new ProviderError("Provider returned an empty completion");
     }
 
-    return { content, modelUsed: data.model ?? this.options.model };
+    return {
+      content,
+      modelUsed: data.model ?? this.options.model,
+      hitTokenLimit: data.choices?.[0]?.finish_reason === "length",
+    };
   }
 }
