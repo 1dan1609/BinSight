@@ -3,7 +3,25 @@ import { IndicatorsJsonSchema } from "./indicators.js";
 
 /** Contract for POST /api/v1/report — the only backend endpoint. Fully stateless. */
 
-export const ProviderNameSchema = z.enum(["groq", "openai"]);
+/**
+ * Every entry must expose an OpenAI-compatible POST {baseUrl}/chat/completions, since one client
+ * (OpenAICompatibleProvider) serves all of them — that single code path is what keeps the
+ * security review surface small. A provider needing its own request/response shape does not
+ * belong here; Claude and Gemini are reachable through openrouter for exactly that reason.
+ *
+ * This enum is also the SSRF control: callers pick a name, never a URL.
+ */
+export const ProviderNameSchema = z.enum([
+  "groq",
+  "openai",
+  "openrouter",
+  "mistral",
+  "deepseek",
+  "together",
+  "cerebras",
+  "xai",
+  "gemini",
+]);
 
 export const ByokConfigSchema = z
   .object({
