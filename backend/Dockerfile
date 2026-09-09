@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 RUN corepack enable
 # better-sqlite3 is a native module: if no prebuilt binary matches Alpine's musl libc,
 # its install script falls back to compiling from source, which needs these.
@@ -25,7 +25,7 @@ RUN pnpm --filter @pe-analyzer/backend build
 # the standard way to get a correct, minimal production node_modules out of a pnpm monorepo.
 RUN pnpm --filter @pe-analyzer/backend deploy --prod /deploy/backend
 
-FROM node:20-alpine AS runtime
+FROM node:26-alpine AS runtime
 # dumb-init: proper signal handling as PID 1. libstdc++: better-sqlite3's native addon links
 # against it at runtime; it's part of the build toolchain but not the bare alpine base.
 RUN apk add --no-cache dumb-init libstdc++
