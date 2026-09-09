@@ -12,7 +12,7 @@ interface ProviderSelectorProps {
  * backend's defaultModel purely as placeholder text — the backend still owns the actual default.
  */
 const PROVIDERS: { value: ProviderName; label: string; modelHint: string }[] = [
-  { value: "groq", label: "Groq", modelHint: "llama-3.3-70b-versatile" },
+  { value: "groq", label: "Groq", modelHint: "openai/gpt-oss-120b" },
   { value: "openai", label: "OpenAI", modelHint: "gpt-4o-mini" },
   {
     value: "openrouter",

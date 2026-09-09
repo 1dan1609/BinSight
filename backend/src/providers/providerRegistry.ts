@@ -18,7 +18,11 @@ interface ProviderConfig {
 export const PROVIDER_REGISTRY: Record<ProviderName, ProviderConfig> = {
   groq: {
     baseUrl: "https://api.groq.com/openai/v1",
-    defaultModel: "llama-3.3-70b-versatile",
+    // llama-3.3-70b-versatile was retired from Groq's catalog and started returning 404, which
+    // took hosted mode down. Picked by testing every chat-capable model Groq currently lists:
+    // groq/compound answered confidently but wrongly (it read "TLS callback" as a TLS handshake
+    // rather than Thread Local Storage), which is worse than an outage in a malware report.
+    defaultModel: "openai/gpt-oss-120b",
   },
   openai: {
     baseUrl: "https://api.openai.com/v1",
