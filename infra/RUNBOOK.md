@@ -9,6 +9,13 @@ Self-managed deployment on an Oracle Cloud "Always Free" ARM VM (Ubuntu 24.04, `
   This is the key stored in GitHub Actions secrets for CD — if it ever leaks, the blast radius is
   limited to this app's containers, not the box.
 
+  The `DEPLOY_SSH_KEY` secret holds this key **base64-encoded**, not raw PEM/OpenSSH text — a
+  multi-line key pasted directly into a GitHub secret's web textarea is fragile (CRLF line endings
+  from a Windows clipboard, a dropped trailing newline, a partial copy) and fails with an opaque
+  client-side SSH error when it happens. To regenerate the secret value if the key ever rotates:
+  `[Convert]::ToBase64String([IO.File]::ReadAllBytes("<path-to-private-key>"))` in PowerShell (or
+  `base64 -w0 <path-to-private-key>` on Linux/macOS) — paste that single-line output as the secret.
+
 ## First-time setup on a fresh VM
 
 Already done on the current instance (documented here in case the VM is ever rebuilt):
