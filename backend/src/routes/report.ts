@@ -60,11 +60,21 @@ export async function registerReportRoute(app: FastifyInstance, dailyQuota: Dail
       const result = await provider.generateReport(prompt);
       const sanitized = sanitizeReport(result.content);
 
+      const warnings: string[] = [];
+      if (result.hitTokenLimit) {
+        warnings.push(
+          "The model reached its output limit, so this report is cut off before the final section.",
+        );
+      }
+      if (sanitized.truncated) {
+        warnings.push("Report was truncated to the maximum allowed length");
+      }
+
       const body: ReportResponse = {
         markdown: sanitized.markdown,
         generatedAt: new Date().toISOString(),
         modelUsed: result.modelUsed,
-        warnings: sanitized.truncated ? ["Report was truncated to the maximum allowed length"] : undefined,
+        warnings: warnings.length > 0 ? warnings : undefined,
       };
       return reply.status(200).send(body);
     } catch (err) {
