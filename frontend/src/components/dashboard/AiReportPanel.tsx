@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { AlertTriangle, Sparkles } from "lucide-react";
 import type { ByokConfig, IndicatorsJson, ReportResponse } from "@pe-analyzer/shared-types";
 import { DownloadReportButton } from "../DownloadButtons";
 import ProviderSelector from "../ProviderSelector";
@@ -43,6 +43,15 @@ export default function AiReportPanel({ indicators, reportState, onGenerate }: A
 
         {reportState.status === "done" && (
           <>
+            {/* A report cut off at the model's output limit still reads as a finished document,
+                so the warning has to be visible above it rather than only present in the API
+                response. */}
+            {reportState.report.warnings?.map((warning) => (
+              <p key={warning} className="banner banner--warning" style={{ marginTop: "1rem" }}>
+                <AlertTriangle size={14} aria-hidden="true" style={{ flexShrink: 0, marginTop: "0.15rem" }} />
+                {warning}
+              </p>
+            ))}
             <ReportView
               markdown={reportState.report.markdown}
               generatedAt={reportState.report.generatedAt}
