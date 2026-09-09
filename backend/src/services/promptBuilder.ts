@@ -1,10 +1,21 @@
 import type { IndicatorsJson } from "@pe-analyzer/shared-types";
 import type { PromptPair } from "../providers/ProviderClient.js";
 
-const MAX_STRINGS_IN_PROMPT = 150;
-const MAX_IMPORTS_IN_PROMPT = 60;
-const MAX_FUNCTIONS_PER_DLL_IN_PROMPT = 40;
-const MAX_EXPORTS_IN_PROMPT = 100;
+/**
+ * These caps exist to fit a token budget, not just to bound size. Groq's free tier allows 8000
+ * tokens per minute for prompt *and* completion combined, and the previous values sent ~4700
+ * prompt tokens for a 44KB benign file — a real sample with a full string table blew past the
+ * limit and the request was rejected outright with a 413.
+ *
+ * Strings dominate the payload (a single extracted string can be 1024 chars), so they are cut
+ * hardest and individually truncated. The parser still keeps everything; this only bounds what
+ * is worth spending tokens on for triage.
+ */
+const MAX_STRINGS_IN_PROMPT = 60;
+const MAX_STRING_CHARS_IN_PROMPT = 200;
+const MAX_IMPORTS_IN_PROMPT = 40;
+const MAX_FUNCTIONS_PER_DLL_IN_PROMPT = 25;
+const MAX_EXPORTS_IN_PROMPT = 40;
 
 const SYSTEM_PROMPT = `You are a malware analysis assistant helping a reverse engineer triage a Windows PE file.
 
@@ -63,7 +74,12 @@ function buildIndicatorsSummary(indicators: IndicatorsJson): string {
   const topStrings = indicators.strings
     .slice()
     .sort((a, b) => b.score - a.score)
-    .slice(0, MAX_STRINGS_IN_PROMPT);
+    .slice(0, MAX_STRINGS_IN_PROMPT)
+    .map((s) =>
+      s.value.length > MAX_STRING_CHARS_IN_PROMPT
+        ? { ...s, value: `${s.value.slice(0, MAX_STRING_CHARS_IN_PROMPT)}…[truncated]` }
+        : s,
+    );
 
   const cappedImports = indicators.imports.slice(0, MAX_IMPORTS_IN_PROMPT).map((imp) => ({
     dll: imp.dll,
@@ -100,7 +116,10 @@ function buildIndicatorsSummary(indicators: IndicatorsJson): string {
     truncated: indicators.truncated,
   };
 
-  return JSON.stringify(summary, null, 2);
+  // Compact, not pretty-printed: the indentation and newlines in a pretty-printed payload this
+  // deeply nested cost a substantial share of the token budget and carry no information the
+  // model needs.
+  return JSON.stringify(summary);
 }
 
 export function buildReportPrompt(indicators: IndicatorsJson): PromptPair {
