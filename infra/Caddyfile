@@ -5,11 +5,30 @@
 {$DOMAIN} {
 	encode gzip
 
+	# API responses carry their own headers from @fastify/helmet. Deliberately not adding the
+	# static-file header block here too: two Content-Security-Policy headers on one response are
+	# intersected by the browser, which silently tightens the policy in ways neither side declared.
 	handle /api/* {
 		reverse_proxy backend:8787
 	}
 
 	handle {
+		header {
+			# Helmet only ever covered the JSON API — a browser never renders that as a document.
+			# These are for the actual HTML page: the thing that executes JS and can be framed.
+			# Everything this app loads is same-origin (no CDNs, no web fonts), so the policy can
+			# stay strict. worker-src is required: the PE parser runs in a Web Worker.
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+			Strict-Transport-Security "max-age=31536000; includeSubDomains"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			Referrer-Policy "no-referrer"
+			Cross-Origin-Opener-Policy "same-origin"
+			Cross-Origin-Resource-Policy "same-origin"
+			Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+			-Server
+		}
+
 		root * /srv
 		try_files {path} /index.html
 		file_server
