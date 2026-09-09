@@ -28,6 +28,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # shared-types' package.json points "types" at ./dist/index.d.ts, which only exists after
+      # this build — without it, typecheck/lint fail to resolve @pe-analyzer/shared-types on a
+      # clean checkout (a locally-cached dist/ from a prior build can mask this).
+      - name: Build shared-types
+        run: pnpm --filter @pe-analyzer/shared-types build
+
       - name: Typecheck
         run: pnpm -r typecheck
 
