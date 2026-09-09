@@ -48,6 +48,15 @@ The images are pulled from GHCR (`ghcr.io/1dan1609/binsight-backend`,
 `ghcr.io/1dan1609/binsight-frontend`) — nothing is built on the VM itself. The `cd.yml` workflow
 runs this same `pull && up -d` over SSH as the `deploy` user after a successful push to `main`.
 
+⚠️ **CD only ships container images, not `infra/`.** `Caddyfile`, `docker-compose.yml`, and `.env`
+are read from `~/binsight/` on the VM, so changes to any of them must be copied up by hand and
+followed by a restart — a merged PR touching `infra/` will *look* deployed but won't be:
+
+```bash
+scp infra/Caddyfile infra/docker-compose.yml deploy@<vm-ip>:~/binsight/
+ssh deploy@<vm-ip> "cd ~/binsight && docker compose up -d --force-recreate frontend"
+```
+
 ## Operating
 
 - **Logs**: `docker compose logs -f backend` / `docker compose logs -f frontend`.
