@@ -39,7 +39,11 @@ export class OpenAICompatibleProvider implements ProviderClient {
             { role: "user", content: prompt.user },
           ],
           temperature: 0.3,
-          max_tokens: 2000,
+          // Reasoning models (the hosted default is one) spend part of this budget on reasoning
+          // tokens before emitting any content, and an exhausted budget surfaces as an empty
+          // completion rather than an error. 2000 was not enough headroom for a four-section
+          // report once reasoning is accounted for.
+          max_tokens: 4000,
         }),
         // Node's fetch has no default timeout: without this a hung upstream pins the request
         // (and its rate-limit slot) open indefinitely.
