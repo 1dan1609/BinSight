@@ -222,8 +222,13 @@ select {
   padding: 2rem;
 }
 
+.empty-state__inner {
+  width: 100%;
+}
+
 .dropzone {
   width: min(560px, 100%);
+  margin: 0 auto;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-md);
   padding: 3rem 2rem;
