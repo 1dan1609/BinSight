@@ -56,7 +56,11 @@ export const PROVIDER_REGISTRY: Record<ProviderName, ProviderConfig> = {
   },
   gemini: {
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-    defaultModel: "gemini-2.0-flash",
+    // gemini-2.0-flash was retired; Google's API now serves a 4xx pointing callers at
+    // gemini-3.6-flash instead of a 404, so this one surfaced as a user-facing "provider
+    // rejected" error rather than an outage. See groq's defaultModel comment above for the
+    // same class of problem (model IDs rot faster than this file gets touched).
+    defaultModel: "gemini-3.6-flash",
   },
 };
 
