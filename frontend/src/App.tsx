@@ -90,7 +90,7 @@ export default function App() {
 
       {parseState.status !== "parsed" ? (
         <div className="empty-state">
-          <div>
+          <div className="empty-state__inner">
             <FileDropzone onFileSelected={handleFileSelected} disabled={parseState.status === "parsing"} />
             {parseState.status === "parsing" && (
               <p className="status" style={{ marginTop: "1rem", justifyContent: "center" }}>
