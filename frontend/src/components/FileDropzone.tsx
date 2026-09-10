@@ -50,7 +50,8 @@ export default function FileDropzone({ onFileSelected, disabled }: FileDropzoneP
       <UploadCloud size={28} className="dropzone__icon" aria-hidden="true" />
       <p className="dropzone__title">Drop a Windows PE file here, or click to browse</p>
       <p className="dropzone__subtitle">
-        Parsing runs entirely in your browser. The file is never uploaded anywhere.
+        Statically analyze Windows PE files: headers, sections, imports/exports, strings, and
+        other indicators used in malware triage.
       </p>
     </div>
   );
