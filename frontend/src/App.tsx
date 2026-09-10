@@ -1,4 +1,4 @@
-import { ShieldCheck } from "lucide-react";
+import { FilePlus, Github, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { ByokConfig, IndicatorsJson, ReportResponse } from "@pe-analyzer/shared-types";
 import { requestReport } from "./api/reportClient";
@@ -37,6 +37,11 @@ export default function App() {
     }
   }
 
+  function handleReset() {
+    setParseState({ status: "idle" });
+    setReportState({ status: "idle" });
+  }
+
   async function handleGenerateReport(mode: "hosted" | "byok", byokConfig?: ByokConfig) {
     if (parseState.status !== "parsed") return;
     setReportState({ status: "generating" });
@@ -56,15 +61,30 @@ export default function App() {
       <header className="app-shell__header">
         <div className="app-shell__brand">
           <h1>BinSight</h1>
+          <a
+            className="app-shell__github"
+            href="https://github.com/1dan1609/BinSight"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="View source on GitHub"
+          >
+            <Github size={15} aria-hidden="true" />
+          </a>
         </div>
         <div className="app-shell__trust">
           <ShieldCheck size={15} aria-hidden="true" />
           {parseState.status === "parsed"
-            ? "This file was parsed entirely in your browser — it was never uploaded"
-            : "Files are parsed entirely in your browser — never uploaded"}
+            ? "This file was parsed entirely in your browser, and it was never uploaded"
+            : "Files are parsed entirely in your browser, and never uploaded"}
         </div>
         {parseState.status === "parsed" && (
-          <DownloadIndicatorsButton indicators={parseState.indicators} />
+          <div className="app-shell__actions">
+            <button type="button" className="secondary" onClick={handleReset}>
+              <FilePlus size={14} aria-hidden="true" style={{ marginRight: "0.4rem", verticalAlign: "-2px" }} />
+              Analyze another file
+            </button>
+            <DownloadIndicatorsButton indicators={parseState.indicators} />
+          </div>
         )}
       </header>
 
