@@ -19,7 +19,7 @@ const PROVIDERS: { value: ProviderName; label: string; modelHint: string }[] = [
     label: "OpenRouter (Claude, Gemini, Llama…)",
     modelHint: "anthropic/claude-sonnet-4.5",
   },
-  { value: "gemini", label: "Google Gemini", modelHint: "gemini-2.0-flash" },
+  { value: "gemini", label: "Google Gemini", modelHint: "gemini-3.6-flash" },
   { value: "deepseek", label: "DeepSeek", modelHint: "deepseek-chat" },
   { value: "mistral", label: "Mistral", modelHint: "mistral-small-latest" },
   { value: "together", label: "Together AI", modelHint: "meta-llama/Llama-3.3-70B-Instruct-Turbo" },
@@ -103,6 +103,13 @@ export default function ProviderSelector({ onGenerate, disabled }: ProviderSelec
               spellCheck={false}
             />
           </label>
+          {byokProvider === "openrouter" && (
+            <p className="hint">
+              Needs an OpenRouter key (from openrouter.ai/keys), not a key from Anthropic, Google,
+              etc. directly — OpenRouter is a separate paid proxy that reaches those models for
+              you.
+            </p>
+          )}
           <p className="hint">
             Your key is sent directly to the backend for this one request and is never logged or
             stored. It is discarded immediately after the report is generated.
